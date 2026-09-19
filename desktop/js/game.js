@@ -1,8 +1,13 @@
 'use strict';
 (() => {
   const A = window.PAINT_ASSETS;
-  const W = 1280,
-    H = 800;
+  // Canvas pixels follow the viewport aspect so brush marks stay round on tall
+  // phone screens; the total pixel count stays at the original 1280x800 budget.
+  const _vw = Math.max(1, window.innerWidth),
+    _vh = Math.max(1, window.innerHeight - 32),
+    _fit = Math.sqrt((1280 * 800) / (_vw * _vh));
+  const W = Math.round(_vw * _fit),
+    H = Math.round(_vh * _fit);
   const root = document.querySelector('#computer');
   const { apps, toolNames, colors, icon } = buildDesktopUI(root, A, W, H);
   const recycleShaker = window.initRecycleShaker(root, A.junk);
