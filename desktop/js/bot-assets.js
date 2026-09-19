@@ -1,0 +1,1 @@
+window.BOT_ASSET={src:'assets/bot-sprites.webp?v=refresh-39',giant:'assets/super-giant.webp?v=refresh-39',eyes:'assets/super-giant-eye.webp?v=refresh-39'};
