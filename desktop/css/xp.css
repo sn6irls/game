@@ -1328,7 +1328,7 @@ html[lang="en"]{ --xp-font: Tahoma, Gulim, '굴림', sans-serif; }
 html[lang="ko"]{ --xp-font: Gulim, '굴림', Tahoma, sans-serif; }
 body,button,input,select,textarea,.language-dialog,.xp-flyout button,.toast{font-family:var(--xp-font)!important;}
 #boot img{width:min(1440px,98vw,133.333vh);height:auto;max-height:100vh;object-fit:contain;}
-@media(max-width:650px),(pointer:coarse){#boot img{width:min(480px,78vw);max-height:65vh;}}
+@media(max-width:650px),(pointer:coarse){#boot img{width:min(640px,96vw);max-height:80vh;}}
 #tool-cursor.chalk{transform:translate(-10px,-38px);}
 #tool-cursor.ds{transform:translate(-12px,-40px);}
 #tool-cursor.checker{transform:translate(-13px,-39px);}
