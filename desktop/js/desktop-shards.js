@@ -12,6 +12,9 @@ window.DesktopShards = class {
   }
   clear() {
     this.items = [];
+    // step() leaves a viewport transform behind, so reset it before clearing or
+    // only part of the layer is wiped and settled shards stay on screen.
+    this.fg.setTransform(1,0,0,1,0,0);
     this.fg.clearRect(0,0,this.front.width,this.front.height);
     this.dirty = true;
   }
