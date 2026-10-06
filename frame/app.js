@@ -3,7 +3,7 @@ const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
 let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recordingStream;
 let resultBlob,resultURL,gifBlob,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
 let hue=0,colorIndex=0, chunks=[], photoPending=false, recordFailed=false;
-const colors=[['핑크',0,'#ef78af'],['하늘',130,'#83b6ff'],['초록',-160,'#70bd86'],['보라',65,'#ae8fe2'],['검정',0,'#55515c']];
+const colors=[['핑크',0,'#ef78af'],['하늘',140,'#9edaff'],['초록',-160,'#70bd86'],['보라',65,'#ae8fe2'],['검정',0,'#55515c']];
 const gifCanvas=document.createElement('canvas');gifCanvas.width=270;gifCanvas.height=480;
 const gifContext=gifCanvas.getContext('2d',{willReadFrequently:true});
 const gl=canvas.getContext('webgl',{alpha:false,preserveDrawingBuffer:true,antialias:false});
@@ -17,8 +17,8 @@ function setupGL(){
  program=gl.createProgram();
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p; varying vec2 uv; void main(){uv=(p+1.0)*0.5;gl_Position=vec4(p,0,1);}'));
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`precision mediump float;
- varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;
- void main(){vec2 c=(uv-.5)*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;vec3 f=texture2D(frame,uv).rgb;
+ varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;
+ void main(){vec2 c=((uv-vec2(.5,.5))/vec2(.85,.60))*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;vec3 f=texture2D(frame,uv).rgb;
  // Recover a black-matted overlay: neutral shadows become light, not dark halos.
  float strength=max(f.r,max(f.g,f.b));
  float a=smoothstep(.015,.075,strength)*strength;
@@ -31,6 +31,7 @@ function setupGL(){
  float saturation=strength-min(f.r,min(f.g,f.b));
  vec3 black=mix(f,vec3(.065+.12*y),smoothstep(.035,.25,saturation));
  tinted=mix(tinted,black,monochrome);
+ tinted=mix(tinted,mix(tinted,vec3(.78,.94,1.),.28*smoothstep(.035,.25,saturation)),sky);
  tinted=mix(tinted,f,lensMask);
  // Un-premultiply black matte before compositing; preserve the lens's own shading.
  vec3 clean=mix(tinted/max(strength,.001),tinted,lensMask);
@@ -41,13 +42,13 @@ function setupGL(){
  function texture(unit,name){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);for(const param of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,param,gl.LINEAR);for(const param of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,param,gl.CLAMP_TO_EDGE);gl.uniform1i(gl.getUniformLocation(program,name),unit);return t;}
  cameraTexture=texture(0,'camera');frameTexture=texture(1,'frame');
 }
-function controls(){const blocked=!ready||busy||!!recorder||photoPending;$('shutter').disabled=blocked;$('flip').disabled=blocked;$('color').disabled=blocked;$('download').disabled=!resultBlob||busy||!!recorder||photoPending;}
+function controls(){const blocked=!ready||busy||!!recorder||photoPending;$('shutter').disabled=blocked;$('flip').disabled=blocked;$('color').disabled=blocked;}
 function draw(){
  if(!ready||camera.readyState<2||frame.readyState<2)return;
  gl.useProgram(program);gl.viewport(0,0,canvas.width,canvas.height);
  for(const [unit,texture,video] of [[0,cameraTexture,camera],[1,frameTexture,frame]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,video);}
- const aspect=camera.videoWidth/camera.videoHeight,target=canvas.width/canvas.height;
- gl.uniform2f(gl.getUniformLocation(program,'crop'),Math.min(1,target/aspect),Math.min(1,aspect/target));gl.uniform1f(gl.getUniformLocation(program,'mirror'),mirror?1:0);gl.uniform1f(gl.getUniformLocation(program,'angle'),hue*Math.PI/180);gl.uniform1f(gl.getUniformLocation(program,'monochrome'),colorIndex===4?1:0);gl.drawArrays(gl.TRIANGLES,0,6);
+ const aspect=camera.videoWidth/camera.videoHeight,target=(canvas.width*.85)/(canvas.height*.60);
+ gl.uniform2f(gl.getUniformLocation(program,'crop'),Math.min(1,target/aspect),Math.min(1,aspect/target));gl.uniform1f(gl.getUniformLocation(program,'mirror'),mirror?1:0);gl.uniform1f(gl.getUniformLocation(program,'angle'),hue*Math.PI/180);gl.uniform1f(gl.getUniformLocation(program,'monochrome'),colorIndex===4?1:0);gl.uniform1f(gl.getUniformLocation(program,'sky'),colorIndex===1?1:0);gl.drawArrays(gl.TRIANGLES,0,6);
 }
 function loop(time){
  requestAnimationFrame(loop);if(document.hidden||time-lastDraw<1000/24)return;lastDraw=time;
@@ -63,8 +64,11 @@ async function openCamera(){
  try{
   if(!navigator.mediaDevices?.getUserMedia)throw Error('카메라를 사용할 수 없어요. Safari 또는 Chrome에서 HTTPS 링크를 열어주세요.');
   if(!program)setupGL();
-  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:720},height:{ideal:1280},frameRate:{ideal:24,max:30}}});
-  mirror=(stream.getVideoTracks()[0].getSettings().facingMode||facing)==='user';camera.srcObject=stream;
+  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:720},height:{ideal:960},aspectRatio:{ideal:.75},resizeMode:{ideal:'none'},frameRate:{ideal:24,max:30}}});
+  const track=stream.getVideoTracks()[0];
+  const zoom=track.getCapabilities?.().zoom;
+  if(zoom){try{await track.applyConstraints({advanced:[{zoom:Math.max(zoom.min,Math.min(1,zoom.max))}]});}catch{/* Some mobile browsers report zoom but reject setting it. */}}
+  mirror=(track.getSettings().facingMode||facing)==='user';camera.srcObject=stream;
   await Promise.all([camera.play(),frame.play()]);ready=true;$('welcome').hidden=true;message('짧게 누르면 사진, 꾹 누르면 녹화 ♡');
  }catch(e){stream?.getTracks().forEach(t=>t.stop());stream=null;const texts={NotAllowedError:'카메라 권한을 허용한 뒤 다시 눌러주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.',NotFoundError:'사용할 카메라를 찾지 못했어요.',NotReadableError:'다른 앱에서 카메라를 사용 중인지 확인해주세요.'};fail(texts[e.name]||e.message);}
  finally{busy=false;controls();$('start').disabled=false;}
@@ -94,7 +98,7 @@ function beginRecording(){
   current.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
   current.onerror=()=>{recordFailed=true;message('녹화 중 오류가 발생했어요. 다시 촬영해주세요.');endRecording();};
   current.onstop=()=>{recordingStream?.getTracks().forEach(t=>t.stop());recorder=null;busy=false;worker?.postMessage({type:'finish'});if(!recordFailed)showResult(new Blob(chunks,{type:current.mimeType||'video/webm'}),false);controls();};
-  draw();current.start(250);recordStarted=performance.now();$('timer').hidden=false;$('shutter').classList.add('recording');$('flip').disabled=true;$('color').disabled=true;$('download').disabled=true;message('손을 떼면 녹화가 끝나요.');
+  draw();current.start(250);recordStarted=performance.now();$('timer').hidden=false;$('shutter').classList.add('recording');$('flip').disabled=true;$('color').disabled=true;message('손을 떼면 녹화가 끝나요.');
  }catch(e){worker?.terminate();worker=null;recordingStream?.getTracks().forEach(t=>t.stop());recorder=null;message('이 기기에서 녹화를 시작하지 못했어요. 사진 촬영은 사용할 수 있어요.');controls();}
 }
 function endRecording(){clearTimeout(pressTimer);pressed=false;if(recorder?.state==='recording'){busy=true;recorder.stop();message('촬영한 영상을 준비하고 있어요…');}$('timer').hidden=true;$('shutter').classList.remove('recording');controls();}
@@ -107,7 +111,6 @@ $('shutter').addEventListener('keyup',e=>{if((e.key===' '||e.key==='Enter')&&pre
 $('start').onclick=openCamera;
 $('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';await openCamera();};
 $('color').onclick=()=>{colorIndex=(colorIndex+1)%colors.length;hue=colors[colorIndex][1];iconLabel('color','색 변경 · '+colors[colorIndex][0]);document.documentElement.style.setProperty('--accent',colors[colorIndex][2]);};
-$('download').onclick=()=>{if(resultBlob)$('result').showModal();};
 $('close').onclick=()=>$('result').close();$('result').addEventListener('close',()=>$('clip').pause());
 async function save(blob){
  if(!blob)return;const ext=blob.type.startsWith('image/gif')?'gif':blob.type.startsWith('image/')?'jpg':blob.type.includes('mp4')?'mp4':'webm';
