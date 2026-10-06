@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff0f6"><title>훈녀생정 프레임 · SNgirls</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><a href="../desktop/">SNgirls ♡</a><span>훈녀생정 프레임</span></header>
+<main>
+<section class="stage" aria-label="프레임 카메라"><canvas id="view" width="540" height="960"></canvas><span id="timer" hidden>● 00:00</span><div id="welcome"><span class="spark">✧</span><h1>오늘의 나,<br>반짝이게 ♡</h1><p>움직이는 훈녀생정 프레임으로<br>사진도, 움짤도 남겨봐요.</p><button id="start">카메라 켜기</button><small>카메라 권한을 허용해주세요.<br>촬영한 사진·영상은 서버에 전송하지 않아요.</small></div></section>
+<p id="status" role="status" aria-live="polite">카메라를 켜면 촬영할 수 있어요.</p>
+<div class="shoot"><span>짧게 누르면 사진</span><button id="shutter" disabled aria-label="사진 촬영, 길게 누르면 동영상 녹화"><span></span></button><span>꾹 누르면 녹화</span></div>
+<nav aria-label="카메라 도구"><button id="flip" disabled>↻<span>전면 / 후면</span></button><button id="download" disabled>↓<span>다운로드</span></button><button id="color" disabled>◉<span>색 변경 · 핑크</span></button></nav>
+<p class="hint">영상은 최대 60초 · GIF는 처음 7.5초 저장<br>카메라가 안 열리면 Safari 또는 Chrome에서 열어주세요.</p>
+</main>
+<dialog id="result"><div class="result-head"><h2>오늘의 반짝임 ♡</h2><button id="close" aria-label="닫기">✕</button></div><img id="photo" alt="프레임 촬영 결과" hidden><video id="clip" controls playsinline loop hidden></video><div class="save-buttons"><button id="save">사진 저장</button><button id="gif" hidden disabled>GIF 만드는 중…</button></div><p id="save-note">저장 버튼을 누르면 공유 또는 다운로드가 열려요.</p></dialog>
+<video id="camera" muted playsinline autoplay class="source"></video><video id="frame" src="frame1.mp4" muted playsinline loop preload="auto" class="source"></video>
+<script type="module" src="app.js"></script>
+</body></html>

@@ -1,13 +1,5 @@
 미니게임 모음
 
-바탕화면 꾸미기 Desktop Games  https://sn6irls.github.io/game/desktop/
+바탕화면 꾸미기 Desktop Games https://sn6irls.github.io/game/desktop/
 
-## 훈녀생정 프레임
-
-사진·영상 편집에 사용할 수 있는 움직이는 프레임 영상입니다.
-
-- [훈녀생정 프레임 영상 보기·다운로드](frame/렌즈_프레임2.mp4)
-- 파일 위치: `frame/렌즈_프레임2.mp4`
-- 형식: MP4
-
-다운로드한 영상을 편집 앱에서 사진·영상과 합성해 사용하세요.
+훈녀생정 프레임 https://sn6irls.github.io/game/frame/
