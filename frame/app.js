@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id);
 const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
 let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recordingStream;
-let resultBlob,resultURL,gifBlob,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
+let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,selectedAsset,saving=false,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
 let hue=0,colorIndex=0, chunks=[], photoPending=false, recordFailed=false;
 const colors=[['핑크',0,'#ef78af'],['하늘',140,'#9edaff'],['초록',-160,'#70bd86'],['보라',65,'#ae8fe2'],['검정',0,'#55515c']];
 const gifCanvas=document.createElement('canvas');gifCanvas.width=270;gifCanvas.height=480;
@@ -22,9 +22,11 @@ function setupGL(){
  // Recover a black-matted overlay: neutral shadows become light, not dark halos.
  float strength=max(f.r,max(f.g,f.b));
  float a=smoothstep(.015,.075,strength)*strength;
- vec2 lens=(uv-vec2(.802,.300))/vec2(.087,.049);
+ vec2 lens=(uv-vec2(.799,.295))/vec2(.091,.0512);
  float lensMask=1.-smoothstep(.93,1.03,length(lens));
- a=mix(a,1.,lensMask);
+ // Only the iris is opaque. Never force the black matte outside its white rim opaque.
+ float iris=1.-smoothstep(.96,1.,length((uv-vec2(.799,.295))/vec2(.076,.04275)));
+ a=mix(a,1.,iris);
  float y=dot(f,vec3(.299,.587,.114)),i=dot(f,vec3(.596,-.274,-.322)),q=dot(f,vec3(.211,-.523,.312));
  float ii=i*cos(angle)-q*sin(angle),qq=i*sin(angle)+q*cos(angle);
  vec3 tinted=clamp(vec3(y+.956*ii+.621*qq,y-.272*ii-.647*qq,y-1.106*ii+1.703*qq),0.,1.);
@@ -34,7 +36,7 @@ function setupGL(){
  tinted=mix(tinted,mix(tinted,vec3(.78,.94,1.),.28*smoothstep(.035,.25,saturation)),sky);
  tinted=mix(tinted,f,lensMask);
  // Un-premultiply black matte before compositing; preserve the lens's own shading.
- vec3 clean=mix(tinted/max(strength,.001),tinted,lensMask);
+ vec3 clean=mix(tinted/max(strength,.001),tinted,iris);
  gl_FragColor=vec4(mix(base,clamp(clean,0.,1.),a),1.);}`));
  gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('프레임 합성을 시작할 수 없어요.');gl.useProgram(program);
  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
@@ -69,19 +71,20 @@ async function openCamera(){
   const zoom=track.getCapabilities?.().zoom;
   if(zoom){try{await track.applyConstraints({advanced:[{zoom:Math.max(zoom.min,Math.min(1,zoom.max))}]});}catch{/* Some mobile browsers report zoom but reject setting it. */}}
   mirror=(track.getSettings().facingMode||facing)==='user';camera.srcObject=stream;
-  await Promise.all([camera.play(),frame.play()]);ready=true;$('welcome').hidden=true;message('짧게 누르면 사진, 꾹 누르면 녹화 ♡');
+  await Promise.all([camera.play(),frame.play()]);
+  await new Promise((resolve,reject)=>{const began=performance.now();function check(){if(camera.videoWidth>16&&camera.videoHeight>16&&camera.readyState>=2){resolve();return;}if(performance.now()-began>10000){reject(Error('카메라 화면을 받지 못했어요. 다시 켜주세요.'));return;}setTimeout(check,100);}check();});ready=true;$('welcome').hidden=true;message('짧게 누르면 사진, 꾹 누르면 녹화 ♡');
  }catch(e){stream?.getTracks().forEach(t=>t.stop());stream=null;const texts={NotAllowedError:'카메라 권한을 허용한 뒤 다시 눌러주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.',NotFoundError:'사용할 카메라를 찾지 못했어요.',NotReadableError:'다른 앱에서 카메라를 사용 중인지 확인해주세요.'};fail(texts[e.name]||e.message);}
  finally{busy=false;controls();$('start').disabled=false;}
 }
-function clearResult(){if(resultURL)URL.revokeObjectURL(resultURL);resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
+function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset)URL.revokeObjectURL(asset.url);saveAsset=gifAsset=null;$('save-fallback').hidden=true;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
 function showResult(blob,isPhoto){
  if(!blob?.size){message('촬영 결과를 저장하지 못했어요. 다시 촬영해주세요.');return;}
- resultBlob=blob;resultURL=URL.createObjectURL(blob);$('photo').hidden=!isPhoto;$('clip').hidden=isPhoto;
+ resultBlob=blob;saveAsset=makeAsset(blob);resultURL=saveAsset.url;$('photo').hidden=!isPhoto;$('clip').hidden=isPhoto;
  if(isPhoto)$('photo').src=resultURL;else{$('clip').src=resultURL;}
  iconLabel('save',isPhoto?'사진 저장':'영상 저장');$('gif').hidden=isPhoto;$('save-note').textContent=isPhoto?'저장 버튼에서 사진을 저장하거나 공유하세요.':'영상은 누른 길이만큼, GIF는 처음 7.5초까지 저장돼요. (소리 없음)';
  if(!$('result').open)$('result').showModal();controls();
 }
-function photo(){if(!ready||busy||photoPending)return;clearResult();photoPending=true;controls();draw();canvas.toBlob(blob=>{photoPending=false;showResult(blob,true);controls();message('사진을 촬영했어요 ♡');},'image/jpeg',.94);}
+function photo(){if(!ready||busy||photoPending)return;clearResult();photoPending=true;controls();canvas.width=1080;canvas.height=1920;draw();canvas.toBlob(blob=>{photoPending=false;showResult(blob,true);controls();message('사진을 촬영했어요 ♡');},'image/jpeg',.97);canvas.width=720;canvas.height=1280;draw();}
 function beginRecording(){
  if(!ready||busy||recorder)return;
  if(!window.MediaRecorder||!canvas.captureStream){message('이 브라우저에서는 사진만 지원해요. Safari/Chrome을 업데이트해주세요.');return;}
@@ -89,11 +92,11 @@ function beginRecording(){
  $('gif').disabled=true;iconLabel('gif','GIF 만드는 중');$('gif').classList.add('loading');
  try{
   worker=new Worker('gif-worker.js',{type:'module'});
-  worker.onmessage=({data})=>{if(data.type==='done'&&data.count){gifBlob=new Blob([data.bytes],{type:'image/gif'});$('gif').disabled=false;iconLabel('gif','움짤 GIF 저장');$('gif').classList.remove('loading');}else{iconLabel('gif','GIF 변환 실패');$('gif').classList.remove('loading');}worker?.terminate();worker=null;};
+  worker.onmessage=({data})=>{if(data.type==='done'&&data.count){gifBlob=new Blob([data.bytes],{type:'image/gif'});gifAsset=makeAsset(gifBlob);$('gif').disabled=false;iconLabel('gif','움짤 GIF 저장');$('gif').classList.remove('loading');}else{iconLabel('gif','GIF 변환 실패');$('gif').classList.remove('loading');}worker?.terminate();worker=null;};
   worker.onerror=()=>{iconLabel('gif','GIF 변환 실패');$('gif').classList.remove('loading');worker?.terminate();worker=null;};worker.postMessage({type:'start'});
   recordingStream=canvas.captureStream(24);
   const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
-  recorder=new MediaRecorder(recordingStream,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:2500000});
+  recorder=new MediaRecorder(recordingStream,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:4500000});
   const current=recorder;
   current.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
   current.onerror=()=>{recordFailed=true;message('녹화 중 오류가 발생했어요. 다시 촬영해주세요.');endRecording();};
@@ -112,13 +115,35 @@ $('start').onclick=openCamera;
 $('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';await openCamera();};
 $('color').onclick=()=>{colorIndex=(colorIndex+1)%colors.length;hue=colors[colorIndex][1];iconLabel('color','색 변경 · '+colors[colorIndex][0]);document.documentElement.style.setProperty('--accent',colors[colorIndex][2]);};
 $('close').onclick=()=>$('result').close();$('result').addEventListener('close',()=>$('clip').pause());
-async function save(blob){
- if(!blob)return;const ext=blob.type.startsWith('image/gif')?'gif':blob.type.startsWith('image/')?'jpg':blob.type.includes('mp4')?'mp4':'webm';
- const name='frame1-'+Date.now()+'.'+ext,file=new File([blob],name,{type:blob.type});
- try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'훈녀생정 프레임'});return;}}catch(e){if(e.name==='AbortError')return;}
- const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=name;a.textContent='저장 파일';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);$('save-note').textContent='다운로드 폴더를 확인해주세요. 미리보기가 열리면 공유 메뉴에서 저장할 수 있어요.';
+function makeAsset(blob){
+ const type=blob.type.split(';')[0].trim()||'application/octet-stream';
+ const ext=type==='image/gif'?'gif':type.startsWith('image/')?'jpg':type==='video/mp4'?'mp4':'webm';
+ const file=new File([blob],'frame1-'+Date.now()+'.'+ext,{type});
+ return {file,url:URL.createObjectURL(file)};
 }
-$('save').onclick=()=>save(resultBlob);$('gif').onclick=()=>save(gifBlob);
+function saveNotice(text){$('save-note').hidden=false;$('save-note').textContent=text;}
+function exposeDownload(asset){
+ selectedAsset=asset;$('save-fallback').hidden=false;
+ $('share-file').hidden=!(navigator.share&&navigator.canShare?.({files:[asset.file]}));
+ $('direct-save').href=asset.url;$('direct-save').download=asset.file.name;
+ $('open-file').href=asset.url;
+}
+function save(asset){
+ if(!asset)return;
+ exposeDownload(asset);
+ $('direct-save').click();
+ saveNotice('다운로드 폴더에 저장돼요. 반응이 없으면 파일 저장을 다시 눌러주세요.');
+}
+async function shareFile(){
+ if(!selectedAsset||saving)return;
+ const asset=selectedAsset;saving=true;$('share-file').disabled=true;
+ try{await navigator.share({files:[asset.file]});saveNotice('공유창에서 선택한 앱을 확인해주세요. 파일 저장도 사용할 수 있어요.');}
+ catch(e){saveNotice(e.name==='AbortError'?'공유가 닫혔어요. 파일 저장으로 저장할 수 있어요.':'공유를 열지 못했어요. 파일 저장 또는 원본 열기를 눌러주세요.');}
+ finally{saving=false;$('share-file').disabled=false;}
+}
+$('share-file').onclick=shareFile;
+$('save').onclick=()=>save(saveAsset);$('gif').onclick=()=>save(gifAsset);
+$('open-file').onclick=()=>saveNotice('열린 사진·영상의 공유 메뉴에서 저장해주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.');
 frame.addEventListener('error',()=>{ready=false;endRecording();fail('프레임 영상을 불러오지 못했어요. 네트워크 확인 후 새로고침해주세요.');controls();});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){endRecording();frame.pause();stream?.getTracks().forEach(t=>t.stop());ready=false;controls();$('welcome').hidden=false;iconLabel('start','카메라 다시 켜기');}});

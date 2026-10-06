@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff1f7"><title>훈녀생정 프레임 · SNgirls</title><link rel="stylesheet" href="style.css?v=3"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff1f7"><title>훈녀생정 프레임 · SNgirls</title><link rel="stylesheet" href="style.css?v=4"></head>
 <body>
 <svg class="symbols" xmlns="http://www.w3.org/2000/svg"><defs>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4a2 2 0 0 1 2 2v11H2V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></symbol>
-<symbol id="i-flip" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 14-3l3 3M21 3v6h-6M20 15A8 8 0 0 1 6 18l-3-3M3 21v-6h6"/></symbol>
+<symbol id="i-flip" viewBox="0 0 24 24"><path class="pixel" d="M7 3h10v2h3v3h2v5h-7v-2h3V8h-2V6H8v2H5V5h2ZM2 11h7v2H6v3h2v2h8v-2h3v3h-2v2H7v-2H4v-3H2Z"/></symbol>
 <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6"/></symbol>
-<symbol id="i-color" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20c4 0 1-5 4-5h2c6 0 5-15-6-15Z"/><circle cx="7" cy="9" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="17" cy="9" r="1"/><circle cx="6" cy="14" r="1"/></symbol>
+<symbol id="i-color" viewBox="0 0 24 24"><path class="pixel" fill-rule="evenodd" d="M8 2h8v2h4v3h2v9h-3v2h-5v4H6v-2H3v-4H1V8h2V5h5ZM8 6H5v3h3Zm7-1h-3v3h3Zm5 5h-3v3h3ZM6 13H3v3h3Z"/></symbol>
 <symbol id="i-gif" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M9 9H5v6h4v-3H7m5-3v6m3 0V9h4m-4 3h3"/></symbol>
 <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
 </defs></svg>
 <main><section class="stage" aria-label="훈녀생정 프레임 카메라">
-<canvas id="view" width="540" height="960"></canvas><span id="timer" hidden>● 00:00</span>
+<canvas id="view" width="720" height="1280"></canvas><span id="timer" hidden>● 00:00</span>
 <div id="welcome"><button id="start" aria-label="카메라 켜기" title="카메라 켜기"><svg><use href="#i-camera"/></svg></button></div>
 <p id="status" role="status" aria-live="polite"></p>
 <nav aria-label="카메라 도구">
@@ -20,6 +20,6 @@
 <button id="color" disabled aria-label="색 변경 · 핑크" title="색 변경"><svg><use href="#i-color"/></svg></button>
 
 </nav></section></main>
-<dialog id="result" aria-label="촬영 결과"><button id="close" aria-label="닫기"><svg><use href="#i-close"/></svg></button><img id="photo" alt="프레임 촬영 결과" hidden><video id="clip" controls playsinline loop hidden></video><div class="save-buttons"><button id="save" aria-label="사진 저장" title="저장"><svg><use href="#i-save"/></svg></button><button id="gif" hidden disabled aria-label="GIF 저장" title="GIF 저장"><svg><use href="#i-gif"/></svg></button><span class="capture-tip">촬영 버튼 꾹 누르면<br>녹화 가능!</span></div><p id="save-note" class="sr-only"></p></dialog>
-<video id="camera" muted playsinline autoplay class="source"></video><video id="frame" src="frame1.mp4" muted playsinline loop preload="auto" class="source"></video>
-<script type="module" src="app.js?v=3"></script></body></html>
+<dialog id="result" aria-label="촬영 결과"><button id="close" aria-label="닫기"><svg><use href="#i-close"/></svg></button><img id="photo" alt="프레임 촬영 결과" hidden><video id="clip" controls playsinline loop hidden></video><div class="save-buttons"><button id="save" aria-label="사진 저장" title="저장"><svg><use href="#i-save"/></svg></button><button id="gif" hidden disabled aria-label="GIF 저장" title="GIF 저장"><svg><use href="#i-gif"/></svg></button><span class="capture-tip">촬영 버튼 꾹 누르면<br>녹화 가능!</span></div><p id="save-note" hidden role="status"></p><div id="save-fallback" hidden><a id="direct-save" download>파일 저장</a><button id="share-file" hidden>공유</button><a id="open-file" target="_blank" rel="noopener">원본 열기</a></div></dialog>
+<video id="camera" muted playsinline autoplay class="source"></video><video id="frame" src="frame1.mp4?v=4" muted playsinline loop preload="auto" class="source"></video>
+<script type="module" src="app.js?v=4"></script></body></html>
