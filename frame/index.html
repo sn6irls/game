@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff1f7"><title>훈녀생정 프레임 · SNgirls</title><link rel="stylesheet" href="style.css?v=5"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff1f7"><title>훈녀생정 프레임 · SNgirls</title><link rel="stylesheet" href="style.css?v=6"></head>
 <body>
 <svg class="symbols" xmlns="http://www.w3.org/2000/svg"><defs>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4a2 2 0 0 1 2 2v11H2V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></symbol>
@@ -12,7 +12,7 @@
 </defs></svg>
 <main><section class="stage" aria-label="훈녀생정 프레임 카메라">
 <canvas id="view" width="720" height="1280"></canvas><span id="timer" hidden>● 00:00</span>
-<div id="welcome"><button id="start" aria-label="카메라 켜기" title="카메라 켜기"><svg><use href="#i-camera"/></svg></button></div>
+<div id="welcome"><button id="start" aria-label="카메라 켜기" title="카메라 켜기"><svg><use href="#i-camera"/></svg></button><div id="browser-gate" hidden><p>사진을 저장하려면<br>브라우저에서 촬영해주세요.</p><a id="browser-open">브라우저에서 촬영</a><small>이동이 안 되면 ⋮ 메뉴 → 외부 브라우저에서 열기</small><input id="browser-url" readonly aria-label="촬영 페이지 주소"><button id="browser-copy">주소 복사</button></div></div>
 <p id="status" role="status" aria-live="polite"></p>
 <nav aria-label="카메라 도구">
 <button id="flip" disabled aria-label="전면 / 후면 카메라" title="전면 / 후면"><svg><use href="#i-flip"/></svg></button>
@@ -21,5 +21,5 @@
 
 </nav></section></main>
 <dialog id="result" aria-label="촬영 결과"><button id="close" aria-label="닫기"><svg><use href="#i-close"/></svg></button><img id="photo" alt="프레임 촬영 결과" hidden><video id="clip" controls playsinline loop hidden></video><div class="save-buttons"><a id="save" role="link" aria-disabled="true" aria-label="사진 저장" title="저장"><svg><use href="#i-save"/></svg></a><a id="gif" role="link" hidden aria-disabled="true" aria-label="GIF 저장" title="GIF 저장"><svg><use href="#i-gif"/></svg></a><span class="capture-tip">촬영 버튼 꾹 누르면<br>녹화 가능!</span></div><p id="save-note" hidden role="status"></p></dialog>
-<video id="camera" muted playsinline autoplay class="source"></video><video id="frame" src="frame1.mp4?v=5" muted playsinline loop preload="auto" class="source"></video>
-<script type="module" src="app.js?v=5"></script></body></html>
+<video id="camera" muted playsinline autoplay class="source"></video><video id="frame" src="frame1.mp4?v=6" muted playsinline loop preload="auto" class="source"></video>
+<script type="module" src="app.js?v=6"></script></body></html>

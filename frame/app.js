@@ -1,4 +1,5 @@
 const $=id=>document.getElementById(id);
+const inApp=/Instagram|FBAN|FBAV|KAKAOTALK|Line\/|; wv\)/i.test(navigator.userAgent);
 const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
 let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recordingStream;
 let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
@@ -61,6 +62,7 @@ function loop(time){
  }
 }
 async function openCamera(){
+ if(inApp){showBrowserGate();return;}
  if(busy)return;status.classList.remove('error');busy=true;ready=false;controls();$('start').disabled=true;message('카메라를 연결하고 있어요…');
  stream?.getTracks().forEach(t=>t.stop());stream=null;
  try{
@@ -76,7 +78,7 @@ async function openCamera(){
  }catch(e){stream?.getTracks().forEach(t=>t.stop());stream=null;const texts={NotAllowedError:'카메라 권한을 허용한 뒤 다시 눌러주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.',NotFoundError:'사용할 카메라를 찾지 못했어요.',NotReadableError:'다른 앱에서 카메라를 사용 중인지 확인해주세요.'};fail(texts[e.name]||e.message);}
  finally{busy=false;controls();$('start').disabled=false;}
 }
-function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.revokeObjectURL(asset.url);asset.disposed=true;asset.ready.then(()=>{if(asset.downloadURL)caches.open('frame-downloads-v1').then(c=>c.delete(asset.downloadURL));});}saveAsset=gifAsset=null;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
+function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.revokeObjectURL(asset.url);}saveAsset=gifAsset=null;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
 function showResult(blob,isPhoto){
  if(!blob?.size){message('촬영 결과를 저장하지 못했어요. 다시 촬영해주세요.');return;}
  resultBlob=blob;saveAsset=makeAsset(blob);bindSave($('save'),saveAsset);resultURL=saveAsset.url;$('photo').hidden=!isPhoto;$('clip').hidden=isPhoto;
@@ -115,51 +117,31 @@ $('start').onclick=openCamera;
 $('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';await openCamera();};
 $('color').onclick=()=>{colorIndex=(colorIndex+1)%colors.length;hue=colors[colorIndex][1];iconLabel('color','색 변경 · '+colors[colorIndex][0]);document.documentElement.style.setProperty('--accent',colors[colorIndex][2]);};
 $('close').onclick=()=>$('result').close();$('result').addEventListener('close',()=>$('clip').pause());
-const downloadReady=(async()=>{
- if(!('serviceWorker' in navigator)||!('caches' in window))return false;
- try{
-  await navigator.serviceWorker.register('download-sw.js',{scope:'./'});
-  await navigator.serviceWorker.ready;
-  if(!navigator.serviceWorker.controller)await new Promise(resolve=>{
-   const timer=setTimeout(()=>{navigator.serviceWorker.removeEventListener('controllerchange',done);resolve();},4000);
-   function done(){clearTimeout(timer);navigator.serviceWorker.removeEventListener('controllerchange',done);resolve();}
-   navigator.serviceWorker.addEventListener('controllerchange',done);
-  });
-  return !!navigator.serviceWorker.controller;
- }catch{return false;}
-})();
+// Remove only this feature's old download worker/cache, not other site workers.
+if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(registrations=>{
+ for(const registration of registrations){const worker=registration.active||registration.waiting||registration.installing;if(worker&&new URL(worker.scriptURL).pathname===new URL('download-sw.js',location.href).pathname)registration.unregister();}
+}).catch(()=>{});
+if('caches' in window)caches.delete('frame-downloads-v1').catch(()=>{});
 function makeAsset(blob){
  const type=blob.type.split(';')[0].trim()||'application/octet-stream';
  const ext=type==='image/gif'?'gif':type.startsWith('image/')?'jpg':type==='video/mp4'?'mp4':'webm';
  const file=new File([blob],'frame1-'+Date.now()+'.'+ext,{type});
- const asset={file,url:URL.createObjectURL(file),disposed:false};
- asset.ready=(async()=>{
-  if(!await downloadReady||asset.disposed)return;
-  try{
-   const url=new URL('download/'+crypto.randomUUID()+'/'+file.name,location.href).href;
-   const cache=await caches.open('frame-downloads-v1');
-   // Limit retained local downloads; there is no remote storage.
-   for(const request of (await cache.keys()).slice(0,-5))await cache.delete(request);
-   await cache.put(url,new Response(file,{headers:{
-    'Content-Type':'application/octet-stream',
-    'Content-Disposition':'attachment; filename="'+file.name+'"',
-    'Content-Length':String(file.size),'Cache-Control':'no-store'
-   }}));
-   asset.downloadURL=url;
-  }catch{/* Private browsing/storage limits: use a real, directly tapped blob link. */}
- })();return asset;
+ return {file,url:URL.createObjectURL(file)};
 }
-function bindSave(link,asset){
- link.removeAttribute('href');link.setAttribute('aria-disabled','true');
- asset.ready.then(()=>{
-  if(asset.disposed)return;
-  link.href=asset.downloadURL||asset.url;
-  if(asset.downloadURL)link.removeAttribute('download');else link.download=asset.file.name;
-  link.setAttribute('aria-disabled','false');
- });
+function bindSave(link,asset){link.href=asset.url;link.download=asset.file.name;link.setAttribute('aria-disabled','false');}
+function showBrowserGate(){
+ $('start').hidden=true;$('browser-gate').hidden=false;
+ const url=new URL('./?v=6',location.href);
+ const android=/Android/i.test(navigator.userAgent);
+ $('browser-open').hidden=!android;
+ $('browser-open').href='intent://'+url.host+url.pathname+url.search+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(url.href)+';end';
+ $('browser-url').value=url.href;
 }
+$('browser-copy').onclick=async()=>{try{await navigator.clipboard.writeText($('browser-url').value);$('browser-copy').textContent='복사됨';}catch{$('browser-url').focus();$('browser-url').select();}};
+if(inApp)showBrowserGate();
 function saveNotice(text){$('save-note').hidden=false;$('save-note').textContent=text;}
 for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
+ if(inApp){event.preventDefault();saveNotice('촬영 전에 Chrome 또는 삼성 인터넷에서 이 페이지를 열어주세요.');return;}
  if($(id).getAttribute('aria-disabled')==='true'||!$(id).hasAttribute('href')){event.preventDefault();saveNotice('파일을 준비하고 있어요. 잠시 후 저장을 눌러주세요.');return;}
  // Keep the user's native link navigation: no synthetic click, share sheet or popup.
  saveNotice('다운로드 요청을 보냈어요. 휴대폰 다운로드 알림을 확인해주세요.');
