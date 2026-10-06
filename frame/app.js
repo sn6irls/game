@@ -131,14 +131,12 @@ function makeAsset(blob){
 function bindSave(link,asset){link.href=asset.url;link.download=asset.file.name;link.setAttribute('aria-disabled','false');}
 function showBrowserGate(){
  $('start').hidden=true;$('browser-gate').hidden=false;
- const url=new URL('./?v=7',location.href);
+ const url=new URL('./?v=8',location.href);
  const android=/Android/i.test(navigator.userAgent);
  const fallback=new URL(url);fallback.searchParams.set('manual','1');
  $('browser-open').hidden=!android;
  $('browser-open').href='intent://'+url.host+url.pathname+url.search+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(fallback.href)+';end';
- $('browser-url').value=url.href;
 }
-$('browser-copy').onclick=async()=>{try{await navigator.clipboard.writeText($('browser-url').value);$('browser-copy').textContent='복사됨';}catch{$('browser-url').focus();$('browser-url').select();}};
 if(inApp){
  showBrowserGate();
  // One attempt on entry. A refused launch must never become a redirect loop.
