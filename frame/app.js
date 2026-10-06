@@ -131,14 +131,23 @@ function makeAsset(blob){
 function bindSave(link,asset){link.href=asset.url;link.download=asset.file.name;link.setAttribute('aria-disabled','false');}
 function showBrowserGate(){
  $('start').hidden=true;$('browser-gate').hidden=false;
- const url=new URL('./?v=6',location.href);
+ const url=new URL('./?v=7',location.href);
  const android=/Android/i.test(navigator.userAgent);
+ const fallback=new URL(url);fallback.searchParams.set('manual','1');
  $('browser-open').hidden=!android;
- $('browser-open').href='intent://'+url.host+url.pathname+url.search+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(url.href)+';end';
+ $('browser-open').href='intent://'+url.host+url.pathname+url.search+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(fallback.href)+';end';
  $('browser-url').value=url.href;
 }
 $('browser-copy').onclick=async()=>{try{await navigator.clipboard.writeText($('browser-url').value);$('browser-copy').textContent='복사됨';}catch{$('browser-url').focus();$('browser-url').select();}};
-if(inApp)showBrowserGate();
+if(inApp){
+ showBrowserGate();
+ // One attempt on entry. A refused launch must never become a redirect loop.
+ if(/Android/i.test(navigator.userAgent)&&!new URL(location.href).searchParams.has('manual')){
+  let attempt=true;
+  try{const previous=Number(sessionStorage.getItem('frame-browser-attempt')||0);attempt=Date.now()-previous>30000;if(attempt)sessionStorage.setItem('frame-browser-attempt',String(Date.now()));}catch{}
+  if(attempt){try{location.replace($('browser-open').href);}catch{/* Keep the user-gesture link available. */}}
+ }
+}
 function saveNotice(text){$('save-note').hidden=false;$('save-note').textContent=text;}
 for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
  if(inApp){event.preventDefault();saveNotice('촬영 전에 Chrome 또는 삼성 인터넷에서 이 페이지를 열어주세요.');return;}
