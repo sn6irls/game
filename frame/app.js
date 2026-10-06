@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id);
 const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
 let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recordingStream;
-let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,selectedAsset,saving=false,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
+let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
 let hue=0,colorIndex=0, chunks=[], photoPending=false, recordFailed=false;
 const colors=[['핑크',0,'#ef78af'],['하늘',140,'#9edaff'],['초록',-160,'#70bd86'],['보라',65,'#ae8fe2'],['검정',0,'#55515c']];
 const gifCanvas=document.createElement('canvas');gifCanvas.width=270;gifCanvas.height=480;
@@ -76,12 +76,12 @@ async function openCamera(){
  }catch(e){stream?.getTracks().forEach(t=>t.stop());stream=null;const texts={NotAllowedError:'카메라 권한을 허용한 뒤 다시 눌러주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.',NotFoundError:'사용할 카메라를 찾지 못했어요.',NotReadableError:'다른 앱에서 카메라를 사용 중인지 확인해주세요.'};fail(texts[e.name]||e.message);}
  finally{busy=false;controls();$('start').disabled=false;}
 }
-function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset)URL.revokeObjectURL(asset.url);saveAsset=gifAsset=null;$('save-fallback').hidden=true;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
+function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.revokeObjectURL(asset.url);asset.disposed=true;asset.ready.then(()=>{if(asset.downloadURL)caches.open('frame-downloads-v1').then(c=>c.delete(asset.downloadURL));});}saveAsset=gifAsset=null;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
 function showResult(blob,isPhoto){
  if(!blob?.size){message('촬영 결과를 저장하지 못했어요. 다시 촬영해주세요.');return;}
- resultBlob=blob;saveAsset=makeAsset(blob);resultURL=saveAsset.url;$('photo').hidden=!isPhoto;$('clip').hidden=isPhoto;
+ resultBlob=blob;saveAsset=makeAsset(blob);bindSave($('save'),saveAsset);resultURL=saveAsset.url;$('photo').hidden=!isPhoto;$('clip').hidden=isPhoto;
  if(isPhoto)$('photo').src=resultURL;else{$('clip').src=resultURL;}
- iconLabel('save',isPhoto?'사진 저장':'영상 저장');$('gif').hidden=isPhoto;$('save-note').textContent=isPhoto?'저장 버튼에서 사진을 저장하거나 공유하세요.':'영상은 누른 길이만큼, GIF는 처음 7.5초까지 저장돼요. (소리 없음)';
+ iconLabel('save',isPhoto?'사진 저장':'영상 저장');$('gif').hidden=isPhoto;$('save-note').textContent='저장할 파일을 준비했어요.';
  if(!$('result').open)$('result').showModal();controls();
 }
 function photo(){if(!ready||busy||photoPending)return;clearResult();photoPending=true;controls();canvas.width=1080;canvas.height=1920;draw();canvas.toBlob(blob=>{photoPending=false;showResult(blob,true);controls();message('사진을 촬영했어요 ♡');},'image/jpeg',.97);canvas.width=720;canvas.height=1280;draw();}
@@ -89,10 +89,10 @@ function beginRecording(){
  if(!ready||busy||recorder)return;
  if(!window.MediaRecorder||!canvas.captureStream){message('이 브라우저에서는 사진만 지원해요. Safari/Chrome을 업데이트해주세요.');return;}
  clearResult();chunks=[];gifFrames=0;recordFailed=false;
- $('gif').disabled=true;iconLabel('gif','GIF 만드는 중');$('gif').classList.add('loading');
+ $('gif').setAttribute('aria-disabled','true');$('gif').removeAttribute('href');iconLabel('gif','GIF 만드는 중');$('gif').classList.add('loading');
  try{
   worker=new Worker('gif-worker.js',{type:'module'});
-  worker.onmessage=({data})=>{if(data.type==='done'&&data.count){gifBlob=new Blob([data.bytes],{type:'image/gif'});gifAsset=makeAsset(gifBlob);$('gif').disabled=false;iconLabel('gif','움짤 GIF 저장');$('gif').classList.remove('loading');}else{iconLabel('gif','GIF 변환 실패');$('gif').classList.remove('loading');}worker?.terminate();worker=null;};
+  worker.onmessage=({data})=>{if(data.type==='done'&&data.count){gifBlob=new Blob([data.bytes],{type:'image/gif'});gifAsset=makeAsset(gifBlob);bindSave($('gif'),gifAsset);iconLabel('gif','움짤 GIF 저장');$('gif').classList.remove('loading');}else{iconLabel('gif','GIF 변환 실패');$('gif').classList.remove('loading');}worker?.terminate();worker=null;};
   worker.onerror=()=>{iconLabel('gif','GIF 변환 실패');$('gif').classList.remove('loading');worker?.terminate();worker=null;};worker.postMessage({type:'start'});
   recordingStream=canvas.captureStream(24);
   const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
@@ -115,35 +115,55 @@ $('start').onclick=openCamera;
 $('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';await openCamera();};
 $('color').onclick=()=>{colorIndex=(colorIndex+1)%colors.length;hue=colors[colorIndex][1];iconLabel('color','색 변경 · '+colors[colorIndex][0]);document.documentElement.style.setProperty('--accent',colors[colorIndex][2]);};
 $('close').onclick=()=>$('result').close();$('result').addEventListener('close',()=>$('clip').pause());
+const downloadReady=(async()=>{
+ if(!('serviceWorker' in navigator)||!('caches' in window))return false;
+ try{
+  await navigator.serviceWorker.register('download-sw.js',{scope:'./'});
+  await navigator.serviceWorker.ready;
+  if(!navigator.serviceWorker.controller)await new Promise(resolve=>{
+   const timer=setTimeout(()=>{navigator.serviceWorker.removeEventListener('controllerchange',done);resolve();},4000);
+   function done(){clearTimeout(timer);navigator.serviceWorker.removeEventListener('controllerchange',done);resolve();}
+   navigator.serviceWorker.addEventListener('controllerchange',done);
+  });
+  return !!navigator.serviceWorker.controller;
+ }catch{return false;}
+})();
 function makeAsset(blob){
  const type=blob.type.split(';')[0].trim()||'application/octet-stream';
  const ext=type==='image/gif'?'gif':type.startsWith('image/')?'jpg':type==='video/mp4'?'mp4':'webm';
  const file=new File([blob],'frame1-'+Date.now()+'.'+ext,{type});
- return {file,url:URL.createObjectURL(file)};
+ const asset={file,url:URL.createObjectURL(file),disposed:false};
+ asset.ready=(async()=>{
+  if(!await downloadReady||asset.disposed)return;
+  try{
+   const url=new URL('download/'+crypto.randomUUID()+'/'+file.name,location.href).href;
+   const cache=await caches.open('frame-downloads-v1');
+   // Limit retained local downloads; there is no remote storage.
+   for(const request of (await cache.keys()).slice(0,-5))await cache.delete(request);
+   await cache.put(url,new Response(file,{headers:{
+    'Content-Type':'application/octet-stream',
+    'Content-Disposition':'attachment; filename="'+file.name+'"',
+    'Content-Length':String(file.size),'Cache-Control':'no-store'
+   }}));
+   asset.downloadURL=url;
+  }catch{/* Private browsing/storage limits: use a real, directly tapped blob link. */}
+ })();return asset;
+}
+function bindSave(link,asset){
+ link.removeAttribute('href');link.setAttribute('aria-disabled','true');
+ asset.ready.then(()=>{
+  if(asset.disposed)return;
+  link.href=asset.downloadURL||asset.url;
+  if(asset.downloadURL)link.removeAttribute('download');else link.download=asset.file.name;
+  link.setAttribute('aria-disabled','false');
+ });
 }
 function saveNotice(text){$('save-note').hidden=false;$('save-note').textContent=text;}
-function exposeDownload(asset){
- selectedAsset=asset;$('save-fallback').hidden=false;
- $('share-file').hidden=!(navigator.share&&navigator.canShare?.({files:[asset.file]}));
- $('direct-save').href=asset.url;$('direct-save').download=asset.file.name;
- $('open-file').href=asset.url;
-}
-function save(asset){
- if(!asset)return;
- exposeDownload(asset);
- $('direct-save').click();
- saveNotice('다운로드 폴더에 저장돼요. 반응이 없으면 파일 저장을 다시 눌러주세요.');
-}
-async function shareFile(){
- if(!selectedAsset||saving)return;
- const asset=selectedAsset;saving=true;$('share-file').disabled=true;
- try{await navigator.share({files:[asset.file]});saveNotice('공유창에서 선택한 앱을 확인해주세요. 파일 저장도 사용할 수 있어요.');}
- catch(e){saveNotice(e.name==='AbortError'?'공유가 닫혔어요. 파일 저장으로 저장할 수 있어요.':'공유를 열지 못했어요. 파일 저장 또는 원본 열기를 눌러주세요.');}
- finally{saving=false;$('share-file').disabled=false;}
-}
-$('share-file').onclick=shareFile;
-$('save').onclick=()=>save(saveAsset);$('gif').onclick=()=>save(gifAsset);
-$('open-file').onclick=()=>saveNotice('열린 사진·영상의 공유 메뉴에서 저장해주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.');
+for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
+ if($(id).getAttribute('aria-disabled')==='true'||!$(id).hasAttribute('href')){event.preventDefault();saveNotice('파일을 준비하고 있어요. 잠시 후 저장을 눌러주세요.');return;}
+ // Keep the user's native link navigation: no synthetic click, share sheet or popup.
+ saveNotice('다운로드 요청을 보냈어요. 휴대폰 다운로드 알림을 확인해주세요.');
+});
 frame.addEventListener('error',()=>{ready=false;endRecording();fail('프레임 영상을 불러오지 못했어요. 네트워크 확인 후 새로고침해주세요.');controls();});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){endRecording();frame.pause();stream?.getTracks().forEach(t=>t.stop());ready=false;controls();$('welcome').hidden=false;iconLabel('start','카메라 다시 켜기');}});
