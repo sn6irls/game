@@ -1,6 +1,7 @@
 const $=id=>document.getElementById(id);
-const inApp=/Instagram|FBAN|FBAV|KAKAOTALK|Line\/|; wv\)/i.test(navigator.userAgent);
+const inApp=/Instagram|FBAN|FBAV|KAKAOTALK|YouTube|GSA\/|Line\/|; wv\)/i.test(navigator.userAgent);
 const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
+let cameraAttempt=0;
 let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recordingStream;
 let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
 let hue=0,colorIndex=0, chunks=[], photoPending=false, recordFailed=false;
@@ -11,7 +12,7 @@ const gl=canvas.getContext('webgl',{alpha:false,preserveDrawingBuffer:true,antia
 let program,cameraTexture,frameTexture;
 function message(text){status.textContent=text;}
 function iconLabel(id,text){$(id).setAttribute('aria-label',text);$(id).title=text;}
-function fail(text){message(text);status.classList.add('error');$('welcome').hidden=false;$('start').disabled=false;iconLabel('start','카메라 다시 켜기');}
+function fail(text){message(text);status.classList.add('error');$('welcome').hidden=false;$('start').disabled=false;$('start').textContent='다시 촬영하기';$('cancel-start').hidden=true;}
 function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
 function setupGL(){
  if(!gl)throw Error('이 브라우저는 프레임 합성을 지원하지 않아요. Safari 또는 Chrome에서 열어주세요.');
@@ -61,23 +62,43 @@ function loop(time){
   if(elapsed>=60000)endRecording();
  }
 }
+function bounded(promise,ms,text){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(text)),ms);})]).finally(()=>clearTimeout(timer));}
+function resetCamera(){cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;ready=false;busy=false;$('start').disabled=false;$('start').textContent='촬영하기';$('cancel-start').hidden=true;$('welcome').hidden=false;controls();}
 async function openCamera(){
  if(inApp){showBrowserGate();return;}
- if(busy)return;status.classList.remove('error');busy=true;ready=false;controls();$('start').disabled=true;message('카메라를 연결하고 있어요…');
+ if(busy)return;
+ if(gl?.isContextLost()){location.reload();return;}
+ const attempt=++cameraAttempt;
+ status.classList.remove('error');$('browser-gate').hidden=true;busy=true;ready=false;controls();$('start').disabled=true;$('start').textContent='준비 중…';$('cancel-start').hidden=false;message('카메라 권한을 허용해주세요.');
  stream?.getTracks().forEach(t=>t.stop());stream=null;
  try{
-  if(!navigator.mediaDevices?.getUserMedia)throw Error('카메라를 사용할 수 없어요. Safari 또는 Chrome에서 HTTPS 링크를 열어주세요.');
-  if(!program)setupGL();
-  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:720},height:{ideal:960},aspectRatio:{ideal:.75},resizeMode:{ideal:'none'},frameRate:{ideal:24,max:30}}});
-  const track=stream.getVideoTracks()[0];
-  const zoom=track.getCapabilities?.().zoom;
-  if(zoom){try{await track.applyConstraints({advanced:[{zoom:Math.max(zoom.min,Math.min(1,zoom.max))}]});}catch{/* Some mobile browsers report zoom but reject setting it. */}}
+  if(!window.isSecureContext)throw Error('보안 연결이 필요해요. HTTPS 촬영 주소로 열어주세요.');
+  if(!navigator.mediaDevices?.getUserMedia){showBrowserGate();throw Error('이 화면에서는 카메라를 사용할 수 없어요. 브라우저 안내를 확인해주세요.');}
+  if(!program){try{setupGL();}catch(e){program=null;throw e;}}
+  if(frame.error)frame.load();
+  // Start muted media within the original tap, before waiting for camera permission.
+  const playback=bounded(frame.play(),12000,'프레임 영상 로딩이 늦어지고 있어요. 연결 확인 후 다시 눌러주세요.').then(()=>null,e=>Error(e.name==='NotAllowedError'?'영상 재생이 차단됐어요. 촬영하기를 다시 눌러주세요.':e.message));
+  const request=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:720},height:{ideal:960},aspectRatio:{ideal:.75},frameRate:{ideal:24,max:30}}}).then(value=>{if(attempt!==cameraAttempt){value.getTracks().forEach(t=>t.stop());throw Error('취소된 촬영');}return value;});
+  const acquired=await bounded(request,20000,'카메라 응답을 기다리지 못했어요. 권한을 확인하고 다시 눌러주세요.');
+  if(attempt!==cameraAttempt){acquired.getTracks().forEach(t=>t.stop());return;}
+  stream=acquired;const track=stream.getVideoTracks()[0];const zoom=track.getCapabilities?.().zoom;
+  if(zoom){try{await bounded(track.applyConstraints({advanced:[{zoom:Math.max(zoom.min,Math.min(1,zoom.max))}]}),1500,'');}catch{}}
+  if(attempt!==cameraAttempt)return;
   mirror=(track.getSettings().facingMode||facing)==='user';camera.srcObject=stream;
-  await Promise.all([camera.play(),frame.play()]);
-  await new Promise((resolve,reject)=>{const began=performance.now();function check(){if(camera.videoWidth>16&&camera.videoHeight>16&&camera.readyState>=2){resolve();return;}if(performance.now()-began>10000){reject(Error('카메라 화면을 받지 못했어요. 다시 켜주세요.'));return;}setTimeout(check,100);}check();});ready=true;$('welcome').hidden=true;message('짧게 누르면 사진, 꾹 누르면 녹화 ♡');
- }catch(e){stream?.getTracks().forEach(t=>t.stop());stream=null;const texts={NotAllowedError:'카메라 권한을 허용한 뒤 다시 눌러주세요. 앱 안에서는 Safari/Chrome으로 열어주세요.',NotFoundError:'사용할 카메라를 찾지 못했어요.',NotReadableError:'다른 앱에서 카메라를 사용 중인지 확인해주세요.'};fail(texts[e.name]||e.message);}
- finally{busy=false;controls();$('start').disabled=false;}
+  await bounded(camera.play(),10000,'카메라 재생을 시작하지 못했어요. 다시 눌러주세요.');
+  const playbackError=await playback;if(playbackError)throw playbackError;
+  await bounded(new Promise((resolve,reject)=>{function check(){if(attempt!==cameraAttempt){reject(Error('취소된 촬영'));return;}if(camera.videoWidth>16&&camera.videoHeight>16&&camera.readyState>=2&&frame.readyState>=2){resolve();return;}setTimeout(check,100);}check();}),10000,'화면을 받지 못했어요. 다시 눌러주세요.');
+  if(attempt!==cameraAttempt)return;
+  if(document.hidden){resetCamera();return;}
+  ready=true;$('welcome').hidden=true;$('start').textContent='촬영하기';status.classList.remove('error');message('');
+ }catch(e){
+  if(attempt!==cameraAttempt)return;
+  cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;
+  const texts={NotAllowedError:'카메라 권한이 차단되어 있어요. 주소창의 사이트 설정과 휴대폰·PC 설정에서 카메라를 허용한 후 다시 눌러주세요.',SecurityError:'이 화면에서 카메라 접근이 제한되어 있어요. 브라우저 안내를 확인해주세요.',NotFoundError:'연결된 카메라가 없어요. 카메라 연결 후 다시 눌러주세요.',NotReadableError:'카메라를 다른 앱이 사용 중이거나 기기 설정에서 차단했어요. 확인 후 다시 눌러주세요.',OverconstrainedError:'이 카메라 설정을 사용할 수 없어요. 다른 카메라로 다시 시도해주세요.'};
+  fail(texts[e.name]||e.message);busy=false;controls();
+ }finally{if(attempt===cameraAttempt){busy=false;controls();$('start').disabled=false;$('cancel-start').hidden=true;}}
 }
+$('cancel-start').onclick=()=>{resetCamera();message('');status.classList.remove('error');};
 function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.revokeObjectURL(asset.url);}saveAsset=gifAsset=null;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
 function showResult(blob,isPhoto){
  if(!blob?.size){message('촬영 결과를 저장하지 못했어요. 다시 촬영해주세요.');return;}
@@ -130,22 +151,16 @@ function makeAsset(blob){
 }
 function bindSave(link,asset){link.href=asset.url;link.download=asset.file.name;link.setAttribute('aria-disabled','false');}
 function showBrowserGate(){
- $('start').hidden=true;$('browser-gate').hidden=false;
- const url=new URL('./?v=8',location.href);
- const android=/Android/i.test(navigator.userAgent);
- const fallback=new URL(url);fallback.searchParams.set('manual','1');
+ $('browser-gate').hidden=false;$('start').hidden=false;
+ const android=/Android/i.test(navigator.userAgent),ios=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const url=new URL('./?v=9',location.href);
  $('browser-open').hidden=!android;
- $('browser-open').href='intent://'+url.host+url.pathname+url.search+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(fallback.href)+';end';
+ $('browser-open').href='intent://'+url.host+url.pathname+url.search+'#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url='+encodeURIComponent(url.href)+';end';
+ $('browser-guide').textContent=ios?'앱의 공유 또는 ⋯ 메뉴에서 기본 브라우저로 열어주세요. 메뉴가 없으면 주소를 복사해 Safari나 Chrome에 붙여넣어주세요.':android?'앱 안에서는 저장이 제한될 수 있어요. 아래 버튼으로 Chrome·삼성 인터넷에서 열어주세요.':'Safari 전용이 아니에요. 브라우저의 카메라 권한을 허용해주세요. 앱 안이라면 주소를 복사해 일반 브라우저에서 열어주세요.';
+ $('browser-url').value=url.href;
 }
-if(inApp){
- showBrowserGate();
- // One attempt on entry. A refused launch must never become a redirect loop.
- if(/Android/i.test(navigator.userAgent)&&!new URL(location.href).searchParams.has('manual')){
-  let attempt=true;
-  try{const previous=Number(sessionStorage.getItem('frame-browser-attempt')||0);attempt=Date.now()-previous>30000;if(attempt)sessionStorage.setItem('frame-browser-attempt',String(Date.now()));}catch{}
-  if(attempt){try{location.replace($('browser-open').href);}catch{/* Keep the user-gesture link available. */}}
- }
-}
+$('browser-help').onclick=showBrowserGate;
+$('browser-copy').onclick=async()=>{try{await navigator.clipboard.writeText($('browser-url').value);$('browser-copy').textContent='복사됨';}catch{$('browser-url').focus();$('browser-url').select();}};
 function saveNotice(text){$('save-note').hidden=false;$('save-note').textContent=text;}
 for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
  if(inApp){event.preventDefault();saveNotice('촬영 전에 Chrome 또는 삼성 인터넷에서 이 페이지를 열어주세요.');return;}
@@ -153,8 +168,8 @@ for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
  // Keep the user's native link navigation: no synthetic click, share sheet or popup.
  saveNotice('다운로드 요청을 보냈어요. 휴대폰 다운로드 알림을 확인해주세요.');
 });
-frame.addEventListener('error',()=>{ready=false;endRecording();fail('프레임 영상을 불러오지 못했어요. 네트워크 확인 후 새로고침해주세요.');controls();});
+frame.addEventListener('error',()=>{if(!ready)return;endRecording();stream?.getTracks().forEach(t=>t.stop());ready=false;fail('프레임 영상을 불러오지 못했어요. 연결 확인 후 다시 눌러주세요.');controls();});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){endRecording();frame.pause();stream?.getTracks().forEach(t=>t.stop());ready=false;controls();$('welcome').hidden=false;iconLabel('start','카메라 다시 켜기');}});
-window.addEventListener('pagehide',()=>{endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){endRecording();frame.pause();if(!recorder)resetCamera();else{stream?.getTracks().forEach(t=>t.stop());ready=false;$('welcome').hidden=false;}}});
+window.addEventListener('pagehide',()=>{cameraAttempt++;endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
 requestAnimationFrame(loop);
