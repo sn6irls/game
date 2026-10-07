@@ -1,4 +1,4 @@
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=11';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=12';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -9,6 +9,7 @@ let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recor
 let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
 let hue=0,colorIndex=0, chunks=[], photoPending=false, recordFailed=false;
 const colors=[['핑크',0,'#ef78af'],['하늘',140,'#9edaff'],['초록',-160,'#70bd86'],['보라',65,'#ae8fe2'],['검정',0,'#55515c']];
+const lensColors=colors.map(([, ,hex])=>hex.match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16)/255));
 const gifCanvas=document.createElement('canvas');gifCanvas.width=270;gifCanvas.height=480;
 const gifContext=gifCanvas.getContext('2d',{willReadFrequently:true});
 const gl=canvas.getContext('webgl',{alpha:false,preserveDrawingBuffer:true,antialias:false});
@@ -22,7 +23,7 @@ function setupGL(){
  program=gl.createProgram();
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p; varying vec2 uv; void main(){uv=(p+1.0)*0.5;gl_Position=vec4(p,0,1);}'));
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`precision mediump float;
- varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;
+ varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;uniform vec3 lensColor;
  void main(){vec2 c=((uv-vec2(.5,.5))/vec2(.85,.60))*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;vec3 f=texture2D(frame,uv).rgb;
  // Recover a black-matted overlay: neutral shadows become light, not dark halos.
  float strength=max(f.r,max(f.g,f.b));
@@ -39,7 +40,10 @@ function setupGL(){
  vec3 black=mix(f,vec3(.065+.12*y),smoothstep(.035,.25,saturation));
  tinted=mix(tinted,black,monochrome);
  tinted=mix(tinted,mix(tinted,vec3(.78,.94,1.),.28*smoothstep(.035,.25,saturation)),sky);
- tinted=mix(tinted,f,lensMask);
+ // Recolor the iris while retaining neutral reflections and the original rim.
+ vec3 lensTint=clamp(lensColor*(y/max(dot(lensColor,vec3(.299,.587,.114)),.001)),0.,1.);
+ vec3 coloredLens=mix(f,lensTint,smoothstep(.015,.12,saturation)*iris*(1.-sky));
+ tinted=mix(tinted,coloredLens,lensMask);
  // Un-premultiply black matte before compositing; preserve the lens's own shading.
  vec3 clean=mix(tinted/max(strength,.001),tinted,iris);
  gl_FragColor=vec4(mix(base,clamp(clean,0.,1.),a),1.);}`));
@@ -55,7 +59,7 @@ function draw(){
  gl.useProgram(program);gl.viewport(0,0,canvas.width,canvas.height);
  for(const [unit,texture,video] of [[0,cameraTexture,camera],[1,frameTexture,frame]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,video);}
  const aspect=camera.videoWidth/camera.videoHeight,target=(canvas.width*.85)/(canvas.height*.60);
- gl.uniform2f(gl.getUniformLocation(program,'crop'),Math.min(1,target/aspect),Math.min(1,aspect/target));gl.uniform1f(gl.getUniformLocation(program,'mirror'),mirror?1:0);gl.uniform1f(gl.getUniformLocation(program,'angle'),hue*Math.PI/180);gl.uniform1f(gl.getUniformLocation(program,'monochrome'),colorIndex===4?1:0);gl.uniform1f(gl.getUniformLocation(program,'sky'),colorIndex===1?1:0);gl.drawArrays(gl.TRIANGLES,0,6);
+ gl.uniform2f(gl.getUniformLocation(program,'crop'),Math.min(1,target/aspect),Math.min(1,aspect/target));gl.uniform1f(gl.getUniformLocation(program,'mirror'),mirror?1:0);gl.uniform1f(gl.getUniformLocation(program,'angle'),hue*Math.PI/180);gl.uniform1f(gl.getUniformLocation(program,'monochrome'),colorIndex===4?1:0);gl.uniform1f(gl.getUniformLocation(program,'sky'),colorIndex===1?1:0);gl.uniform3f(gl.getUniformLocation(program,'lensColor'),...lensColors[colorIndex]);gl.drawArrays(gl.TRIANGLES,0,6);
 }
 function loop(time){
  requestAnimationFrame(loop);if(document.hidden||time-lastDraw<1000/24)return;lastDraw=time;
