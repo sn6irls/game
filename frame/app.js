@@ -1,4 +1,6 @@
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=10';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=11';
+import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
+const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
 const inApp=/Instagram|FBAN|FBAV|KAKAOTALK|YouTube|GSA\/|Line\/|; wv\)/i.test(navigator.userAgent);
 const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
@@ -79,11 +81,13 @@ async function openCamera(){
   if(frame.error)frame.load();
   // Start muted media within the original tap, before waiting for camera permission.
   const playback=bounded(frame.play(),12000,'프레임 영상 로딩이 늦어지고 있어요. 연결 확인 후 다시 눌러주세요.').then(()=>null,e=>Error(e.name==='NotAllowedError'?'영상 재생이 차단됐어요. 촬영하기를 다시 눌러주세요.':e.message));
-  const request=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:720},height:{ideal:960},aspectRatio:{ideal:.75},frameRate:{ideal:24,max:30}}}).then(value=>{if(attempt!==cameraAttempt){value.getTracks().forEach(t=>t.stop());throw Error('취소된 촬영');}return value;});
+  const samsung=await samsungPhone;
+  if(attempt!==cameraAttempt)return;
+  const request=navigator.mediaDevices.getUserMedia(cameraConstraints(facing,samsung)).then(value=>{if(attempt!==cameraAttempt){value.getTracks().forEach(t=>t.stop());throw Error('취소된 촬영');}return value;});
   const acquired=await bounded(request,20000,'카메라 응답을 기다리지 못했어요. 권한을 확인하고 다시 눌러주세요.');
   if(attempt!==cameraAttempt){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;const track=stream.getVideoTracks()[0];const zoom=track.getCapabilities?.().zoom;
-  if(zoom){try{await bounded(track.applyConstraints({advanced:[{zoom:Math.max(zoom.min,Math.min(1,zoom.max))}]}),1500,'');}catch{}}
+  if(zoom){try{await bounded(track.applyConstraints({advanced:[{zoom:cameraZoom(zoom,samsung,track.getSettings().facingMode||facing)}]}),1500,'');}catch{}}
   if(attempt!==cameraAttempt)return;
   mirror=(track.getSettings().facingMode||facing)==='user';camera.srcObject=stream;
   await bounded(camera.play(),10000,'카메라 재생을 시작하지 못했어요. 다시 눌러주세요.');
