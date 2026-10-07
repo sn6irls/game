@@ -1,6 +1,6 @@
 // Samsung Internet also runs on other brands; identify the device model instead.
 export function isSamsungPhone(ua, model='') {
- return /Android/i.test(ua) && /(?:SAMSUNG|\bSM-|\bGT-|\bSCH-|\bSGH-)/i.test(ua+' '+model);
+ return /Android/i.test(ua) && /(?:\bSAMSUNG\b|\bSM-|\bGT-|\bSCH-|\bSGH-)/i.test(ua+' '+model);
 }
 export async function detectSamsungPhone(nav) {
  if(isSamsungPhone(nav.userAgent))return true;
