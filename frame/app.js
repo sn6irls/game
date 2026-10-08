@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=14';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=14';
+import {EyeTracker} from './eye-tracker.js?v=15';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=15';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -27,8 +27,8 @@ async function loadEyeSprites(){
  if(eyeSprites)return;
  if(eyeSpritesLoading)return eyeSpritesLoading;
  eyeSpritesLoading=(async()=>{
-  const images=await Promise.all(['left-1','right-1','left-2','right-2'].map(async name=>{
-   const image=new Image();image.src='eyes-'+name+'.png?v=14';
+  const images=await Promise.all(['left-1','right-1','left-2','right-2','left-3','right-3'].map(async name=>{
+   const image=new Image();image.src='eyes-'+name+'.png?v=15';
    await bounded(image.decode(),15000,'눈 이미지 로딩 실패');return image;
   }));
   const textures=images.map(image=>{
@@ -60,14 +60,19 @@ function setupGL(){
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p; varying vec2 uv; void main(){uv=(p+1.0)*0.5;gl_Position=vec4(p,0,1);}'));
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`precision mediump float;
  varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;uniform vec3 lensColor;uniform vec4 eyeA;uniform vec4 eyeB;
- uniform sampler2D eyeLeft;uniform sampler2D eyeRight;uniform vec2 eyeAxis;
+ uniform sampler2D eyeLeft;uniform sampler2D eyeRight;uniform sampler2D eyeLeftClosed;uniform sampler2D eyeRightClosed;uniform vec2 eyeAxis;uniform vec2 eyeBlink;
  vec3 trackedLens(vec3 base,vec4 eye,float side){
   if(eye.z<=0.)return base;
   vec2 axis=normalize(eyeAxis),delta=(uv-eye.xy)*vec2(1.,1280./720.);
   vec2 q=vec2(dot(delta,axis),dot(delta,vec2(-axis.y,axis.x)))/vec2(eye.z,eye.w*1280./720.);
   if(max(abs(q.x),abs(q.y))>=1.)return base;
   vec2 tex=q*.5+.5;
-  vec4 sampleEye=side<.5?texture2D(eyeLeft,tex):texture2D(eyeRight,tex);
+  vec4 openEye=side<.5?texture2D(eyeLeft,tex):texture2D(eyeRight,tex);
+  // Closed artwork sits at the bottom of its PNG; align its lid with the tracked eye center.
+  vec2 closedTex=tex-vec2(0.,.25);
+  vec4 closedEye=side<.5?texture2D(eyeLeftClosed,closedTex):texture2D(eyeRightClosed,closedTex);
+  if(closedTex.y<0.||closedTex.y>1.)closedEye=vec4(0.);
+  vec4 sampleEye=mix(openEye,closedEye,side<.5?eyeBlink.x:eyeBlink.y);
   vec3 pixel=sampleEye.rgb/max(sampleEye.a,.001);
   float luminance=dot(pixel,vec3(.299,.587,.114));
   // Tint only the blue iris; black lashes and white sparkles keep their original colors.
@@ -105,7 +110,7 @@ function setupGL(){
  function texture(unit,name){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);for(const param of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,param,gl.LINEAR);for(const param of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,param,gl.CLAMP_TO_EDGE);gl.uniform1i(gl.getUniformLocation(program,name),unit);return t;}
  cameraTexture=texture(0,'camera');frameTexture=texture(1,'frame');
  // Transparent placeholders make all sampler units complete before the first lens tap.
- for(const [unit,name] of [[2,'eyeLeft'],[3,'eyeRight']]){texture(unit,name);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4));}
+ for(const [unit,name] of [[2,'eyeLeft'],[3,'eyeRight'],[4,'eyeLeftClosed'],[5,'eyeRightClosed']]){texture(unit,name);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(4));}
 }
 function controls(){const blocked=!ready||busy||!!recorder||photoPending;$('shutter').disabled=blocked;$('flip').disabled=blocked;$('color').disabled=blocked;$('lens-toggle').disabled=blocked;}
 function draw(){
@@ -117,9 +122,10 @@ function draw(){
  gl.uniform4f(gl.getUniformLocation(program,'eyeA'),...(eyes?.[0].slice(0,4)||[0,0,0,0]));
  gl.uniform4f(gl.getUniformLocation(program,'eyeB'),...(eyes?.[1].slice(0,4)||[0,0,0,0]));
  gl.uniform2f(gl.getUniformLocation(program,'eyeAxis'),...(eyes?.[0].slice(4,6)||[1,0]));
+ gl.uniform2f(gl.getUniformLocation(program,'eyeBlink'),eyes?.[0][6]||0,eyes?.[1][6]||0);
  if(eyeSprites){
   const offset=(Math.floor(performance.now()/320)%2)*2;
-  for(const [unit,index] of [[2,offset],[3,offset+1]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,eyeSprites[index]);}
+  for(const [unit,index] of [[2,offset],[3,offset+1],[4,4],[5,5]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,eyeSprites[index]);}
  }
  gl.uniform2f(gl.getUniformLocation(program,'crop'),Math.min(1,target/aspect),Math.min(1,aspect/target));gl.uniform1f(gl.getUniformLocation(program,'mirror'),mirror?1:0);gl.uniform1f(gl.getUniformLocation(program,'angle'),hue*Math.PI/180);gl.uniform1f(gl.getUniformLocation(program,'monochrome'),colorIndex===4?1:0);gl.uniform1f(gl.getUniformLocation(program,'sky'),colorIndex===1?1:0);gl.uniform3f(gl.getUniformLocation(program,'lensColor'),...lensColors[colorIndex]);gl.drawArrays(gl.TRIANGLES,0,6);
 }
