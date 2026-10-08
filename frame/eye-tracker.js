@@ -14,7 +14,7 @@ export function projectEyes(eyes,aspect,mirror,faceSpan=null,blink=[false,false]
   // Each eye spans 58% of the tracked face width, independent of natural eye size.
   const radius=Math.max(.015,faceWidth*.29);
   // The drawn pupils sit inward of each PNG center; compensate before adding the outward offset.
-  const shift=(i===0?-1:1)*(faceWidth*.09+radius*.16);
+  const shift=(i===0?-1:1)*(faceWidth*.03+radius*.16);
   return [eye.x+axis[0]*shift,eye.y+(axis[1]*shift-faceWidth*.025)*720/1280,radius,radius*(335/318)*720/1280,...axis,eye.blink];
  });
 }

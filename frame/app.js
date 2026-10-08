@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=19';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=19';
+import {EyeTracker} from './eye-tracker.js?v=20';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=20';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
