@@ -2,19 +2,28 @@
 export function projectEyes(eyes,aspect,mirror){
  const target=(720*.85)/(1280*.60),cx=Math.min(1,target/aspect),cy=Math.min(1,aspect/target);
  const point=p=>[.5+((mirror?1-p.x:p.x)-.5)*.85/cx,.5+(.5-p.y)*.60/cy];
- return eyes.map(pair=>{
+ const centers=eyes.map(pair=>{
   const a=point(pair[0]),b=point(pair[1]);
-  const radius=Math.min(.18,Math.max(.015,Math.hypot(a[0]-b[0],(a[1]-b[1])*1280/720)*.88));
-  return [(a[0]+b[0])/2,(a[1]+b[1])/2,radius,radius*720/1280];
+  return {x:(a[0]+b[0])/2,y:(a[1]+b[1])/2,width:Math.hypot(a[0]-b[0],(a[1]-b[1])*1280/720)};
+ }).sort((a,b)=>a.x-b.x);
+ const dx=centers[1].x-centers[0].x,dy=(centers[1].y-centers[0].y)*1280/720;
+ const distance=Math.hypot(dx,dy),axis=[dx/Math.max(distance,.001),dy/Math.max(distance,.001)];
+ return centers.map((eye,i)=>{
+  // Move each eye out by 6% of eye spacing; cap size so large character eyes do not overlap.
+  const radius=Math.min(.22,distance*.46,Math.max(.015,eye.width*.98));
+  // The drawn pupils sit inward of each PNG center; compensate before adding the outward offset.
+  const shift=(i===0?-1:1)*(distance*.06+radius*.16);
+  return [eye.x+axis[0]*shift,eye.y+axis[1]*shift*720/1280,radius,radius*(350/320)*720/1280,...axis];
  });
 }
+
 export class EyeTracker{
  constructor(onState){this.onState=onState;this.enabled=false;this.points=null;this.last=0;}
  start(){
   this.stop();this.enabled=true;this.onState('loading');
   try{
    if(!globalThis.Worker||!globalThis.OffscreenCanvas||!globalThis.createImageBitmap)throw Error();
-   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=13',import.meta.url));
+   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=14',import.meta.url));
    this.timer=setTimeout(()=>this.fail(),30000);
    worker.onerror=()=>{if(this.worker===worker)this.fail();};
    worker.onmessage=({data})=>{

@@ -1,6 +1,6 @@
 // Browser launches are best-effort: host apps may require an OS confirmation.
 export function browserLaunchURL(userAgent,pageURL){
- const target=new URL('./?v=13',pageURL),ua=userAgent.toLowerCase();
+ const target=new URL('./?v=14',pageURL),ua=userAgent.toLowerCase();
  if(ua.includes('kakaotalk'))return 'kakaotalk://web/openExternal?url='+encodeURIComponent(target.href);
  if(ua.includes('android')){
   const fallback=new URL(target);fallback.searchParams.set('manual','1');
