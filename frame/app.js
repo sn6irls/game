@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=15';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=15';
+import {EyeTracker} from './eye-tracker.js?v=16';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=16';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -178,12 +178,19 @@ async function openCamera(){
  }finally{if(attempt===cameraAttempt){busy=false;controls();$('start').disabled=false;}}
 }
 function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.revokeObjectURL(asset.url);}saveAsset=gifAsset=null;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
+let captureTipTimer;
+function startCaptureTips(){
+ clearInterval(captureTipTimer);
+ const tips=['렌즈를 눌러서\n변신해봐!','촬영 버튼 꾹 누르면\n녹화 가능!'];
+ const label=document.querySelector('.capture-tip');let index=0;label.textContent=tips[0];
+ captureTipTimer=setInterval(()=>{index=1-index;label.textContent=tips[index];},2800);
+}
 function showResult(blob,isPhoto){
  if(!blob?.size){message('촬영 결과를 저장하지 못했어요. 다시 촬영해주세요.');return;}
  resultBlob=blob;saveAsset=makeAsset(blob);bindSave($('save'),saveAsset);resultURL=saveAsset.url;$('photo').hidden=!isPhoto;$('clip').hidden=isPhoto;
  if(isPhoto)$('photo').src=resultURL;else{$('clip').src=resultURL;}
  iconLabel('save',isPhoto?'사진 저장':'영상 저장');$('gif').hidden=isPhoto;$('save-note').textContent='저장할 파일을 준비했어요.';
- if(!$('result').open)$('result').showModal();controls();
+ if(!$('result').open)$('result').showModal();startCaptureTips();controls();
 }
 function photo(){if(!ready||busy||photoPending)return;clearResult();photoPending=true;controls();canvas.width=1080;canvas.height=1920;draw();canvas.toBlob(blob=>{photoPending=false;showResult(blob,true);controls();message('사진을 촬영했어요 ♡');},'image/jpeg',.97);canvas.width=720;canvas.height=1280;draw();}
 function beginRecording(){
@@ -215,7 +222,7 @@ $('shutter').addEventListener('keyup',e=>{if((e.key===' '||e.key==='Enter')&&pre
 $('start').onclick=openCamera;
 $('flip').onclick=async()=>{facing=facing==='user'?'environment':'user';await openCamera();};
 $('color').onclick=()=>{colorIndex=(colorIndex+1)%colors.length;hue=colors[colorIndex][1];iconLabel('color','색 변경 · '+colors[colorIndex][0]);document.documentElement.style.setProperty('--accent',colors[colorIndex][2]);};
-$('close').onclick=()=>$('result').close();$('result').addEventListener('close',()=>$('clip').pause());
+$('close').onclick=()=>$('result').close();$('result').addEventListener('close',()=>{$('clip').pause();clearInterval(captureTipTimer);});
 // Remove only this feature's old download worker/cache, not other site workers.
 if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations().then(registrations=>{
  for(const registration of registrations){const worker=registration.active||registration.waiting||registration.installing;if(worker&&new URL(worker.scriptURL).pathname===new URL('download-sw.js',location.href).pathname)registration.unregister();}
@@ -251,5 +258,5 @@ for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
 frame.addEventListener('error',()=>{if(!ready)return;eyeTracker.stop();endRecording();stream?.getTracks().forEach(t=>t.stop());ready=false;fail('프레임 영상을 불러오지 못했어요. 연결 확인 후 다시 눌러주세요.');controls();});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();eyeTracker.stop();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){eyeTracker.stop();endRecording();frame.pause();if(!recorder)resetCamera();else{stream?.getTracks().forEach(t=>t.stop());ready=false;$('welcome').hidden=false;}}});
-window.addEventListener('pagehide',()=>{eyeTracker.stop();cameraAttempt++;endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
+window.addEventListener('pagehide',()=>{clearInterval(captureTipTimer);eyeTracker.stop();cameraAttempt++;endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
 requestAnimationFrame(loop);

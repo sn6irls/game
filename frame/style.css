@@ -22,8 +22,10 @@ nav svg{width:28px;height:28px;shape-rendering:crispEdges}.pixel{fill:currentCol
 
 /* The existing animated lens itself is the toggle; no additional toolbar. */
 #lens-toggle{position:absolute;left:70.8%;top:65.38%;width:18.2%;height:10.24%;min-width:44px;min-height:44px;border-radius:50%;background:transparent;padding:0;z-index:1}
-#lens-toggle[aria-pressed="true"]{box-shadow:0 0 0 3px white,0 0 0 8px var(--accent),0 0 14px 9px #ffffff80}
+#lens-toggle[aria-pressed="true"]{box-shadow:0 0 0 7px var(--accent)}
 #lens-toggle.loading{animation:pulse 1s infinite}
 #lens-toggle:disabled{pointer-events:none}
 #eye-notice{position:absolute;top:77%;left:12%;right:12%;font-family:Galmuri,monospace;text-align:center;background:#fff5f9ed;padding:8px;border-radius:8px;font-size:11px;z-index:1}
 #eye-notice[hidden]{display:none}
+
+.capture-tip{display:block;min-width:154px;min-height:40px;white-space:pre-line}

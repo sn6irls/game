@@ -11,8 +11,8 @@ export function projectEyes(eyes,aspect,mirror,faceSpan=null,blink=[false,false]
  const span=faceSpan?.map(point);
  const faceWidth=span?Math.hypot(span[1][0]-span[0][0],(span[1][1]-span[0][1])*1280/720):distance*2.3;
  return centers.map((eye,i)=>{
-  // Each eye spans 36% of the tracked face width, independent of natural eye size.
-  const radius=Math.max(.015,faceWidth*.18);
+  // Each eye spans 58% of the tracked face width, independent of natural eye size.
+  const radius=Math.max(.015,faceWidth*.29);
   // The drawn pupils sit inward of each PNG center; compensate before adding the outward offset.
   const shift=(i===0?-1:1)*(distance*.06+radius*.16);
   return [eye.x+axis[0]*shift,eye.y+axis[1]*shift*720/1280,radius,radius*(335/318)*720/1280,...axis,eye.blink];
@@ -25,7 +25,7 @@ export class EyeTracker{
   this.stop();this.enabled=true;this.onState('loading');
   try{
    if(!globalThis.Worker||!globalThis.OffscreenCanvas||!globalThis.createImageBitmap)throw Error();
-   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=15',import.meta.url));
+   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=16',import.meta.url));
    this.timer=setTimeout(()=>this.fail(),30000);
    worker.onerror=()=>{if(this.worker===worker)this.fail();};
    worker.onmessage=({data})=>{
@@ -45,7 +45,7 @@ export class EyeTracker{
   clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.enabled=false;this.loaded=false;this.pending=false;this.points=null;this.smoothed=null;this.last=0;this.onState('off');
  }
  update(video,time){
-  if(!this.loaded||this.pending||video.readyState<2||time-this.last<80)return;
+  if(!this.loaded||this.pending||video.readyState<2||time-this.last<50)return;
   this.last=time;this.pending=true;
   const worker=this.worker;
   // One small frame in flight: slow phones never accumulate a queue.

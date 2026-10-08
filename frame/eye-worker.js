@@ -2,7 +2,7 @@
 self.exports={};
 importScripts('./vendor/mediapipe/vision_bundle.js');
 let detector,faceDetector,files;
-let blink=[false,false];
+let blink=[false,false],openScore=[null,null];
 self.onmessage=async({data})=>{
  try{
   if(data.type==='init'){
@@ -23,7 +23,11 @@ self.onmessage=async({data})=>{
     // Match the corner-pair order below: subject right eye, then subject left eye.
     blink=['eyeBlinkRight','eyeBlinkLeft'].map((name,i)=>{
      const score=scores.find(s=>s.categoryName===name)?.score||0;
-     return face?score>(blink[i] ? .32 : .5):false;
+     if(!face){openScore[i]=null;return false;}
+     // Learn each eye's open resting score so squinty eyes/glasses do not stay closed.
+     openScore[i]=Math.min(openScore[i]??.35,score);
+     const threshold=blink[i]?Math.max(.14,openScore[i]+.06):Math.max(.25,openScore[i]+.15);
+     return score>threshold;
     });
     // Stylized faces may fail the dense mesh even when a face and both eyes are clear.
     let fallbackEyes=null;
