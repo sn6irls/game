@@ -1,4 +1,5 @@
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=12';
+import {EyeTracker} from './eye-tracker.js?v=13';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=13';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -14,6 +15,15 @@ const gifCanvas=document.createElement('canvas');gifCanvas.width=270;gifCanvas.h
 const gifContext=gifCanvas.getContext('2d',{willReadFrequently:true});
 const gl=canvas.getContext('webgl',{alpha:false,preserveDrawingBuffer:true,antialias:false});
 let program,cameraTexture,frameTexture;
+let eyeNoticeTimer;
+const eyeTracker=new EyeTracker(state=>{
+ const button=$('lens-toggle');button.setAttribute('aria-pressed',String(state==='on'||state==='loading'));
+ button.classList.toggle('loading',state==='loading');button.setAttribute('aria-busy',String(state==='loading'));
+ button.setAttribute('aria-label',state==='on'?'눈 렌즈 끄기':'눈 렌즈 켜기');
+ clearTimeout(eyeNoticeTimer);$('eye-notice').hidden=true;
+ if(state==='error'){$('eye-notice').textContent='렌즈를 다시 눌러주세요';$('eye-notice').hidden=false;eyeNoticeTimer=setTimeout(()=>$('eye-notice').hidden=true,3500);}
+});
+$('lens-toggle').onclick=()=>{if(!ready||busy||recorder)return;if(eyeTracker.enabled)eyeTracker.stop();else eyeTracker.start();};
 function message(text){status.textContent=text;}
 function iconLabel(id,text){$(id).setAttribute('aria-label',text);$(id).title=text;}
 function fail(text){message(text);status.classList.add('error');$('welcome').hidden=false;$('start').disabled=false;$('start').textContent='start';}
@@ -23,8 +33,20 @@ function setupGL(){
  program=gl.createProgram();
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p; varying vec2 uv; void main(){uv=(p+1.0)*0.5;gl_Position=vec4(p,0,1);}'));
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`precision mediump float;
- varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;uniform vec3 lensColor;
- void main(){vec2 c=((uv-vec2(.5,.5))/vec2(.85,.60))*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;vec3 f=texture2D(frame,uv).rgb;
+ varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;uniform vec3 lensColor;uniform vec4 eyeA;uniform vec4 eyeB;
+ vec3 trackedLens(vec3 base,vec4 eye){
+  if(eye.z<=0.)return base;
+  vec2 q=(uv-eye.xy)/eye.zw;
+  float edge=1.-smoothstep(.96,1.,length(q));
+  if(edge<=0.)return base;
+  vec3 pixel=texture2D(frame,vec2(.799,.295)+q*vec2(.087,.04894)).rgb;
+  float luminance=dot(pixel,vec3(.299,.587,.114));
+  float chroma=max(pixel.r,max(pixel.g,pixel.b))-min(pixel.r,min(pixel.g,pixel.b));
+  vec3 color=clamp(lensColor*luminance/max(dot(lensColor,vec3(.299,.587,.114)),.001),0.,1.);
+  pixel=mix(pixel,color,smoothstep(.015,.12,chroma)*(1.-smoothstep(.82,.87,length(q)))*(1.-sky));
+  return mix(base,pixel,edge);
+ }
+ void main(){vec2 c=((uv-vec2(.5,.5))/vec2(.85,.60))*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;base=trackedLens(trackedLens(base,eyeA),eyeB);vec3 f=texture2D(frame,uv).rgb;
  // Recover a black-matted overlay: neutral shadows become light, not dark halos.
  float strength=max(f.r,max(f.g,f.b));
  float a=smoothstep(.015,.075,strength)*strength;
@@ -53,16 +75,20 @@ function setupGL(){
  function texture(unit,name){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);for(const param of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,param,gl.LINEAR);for(const param of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,param,gl.CLAMP_TO_EDGE);gl.uniform1i(gl.getUniformLocation(program,name),unit);return t;}
  cameraTexture=texture(0,'camera');frameTexture=texture(1,'frame');
 }
-function controls(){const blocked=!ready||busy||!!recorder||photoPending;$('shutter').disabled=blocked;$('flip').disabled=blocked;$('color').disabled=blocked;}
+function controls(){const blocked=!ready||busy||!!recorder||photoPending;$('shutter').disabled=blocked;$('flip').disabled=blocked;$('color').disabled=blocked;$('lens-toggle').disabled=blocked;}
 function draw(){
  if(!ready||camera.readyState<2||frame.readyState<2)return;
  gl.useProgram(program);gl.viewport(0,0,canvas.width,canvas.height);
  for(const [unit,texture,video] of [[0,cameraTexture,camera],[1,frameTexture,frame]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,video);}
  const aspect=camera.videoWidth/camera.videoHeight,target=(canvas.width*.85)/(canvas.height*.60);
+ const eyes=eyeTracker.positions(aspect,mirror);
+ gl.uniform4f(gl.getUniformLocation(program,'eyeA'),...(eyes?.[0]||[0,0,0,0]));
+ gl.uniform4f(gl.getUniformLocation(program,'eyeB'),...(eyes?.[1]||[0,0,0,0]));
  gl.uniform2f(gl.getUniformLocation(program,'crop'),Math.min(1,target/aspect),Math.min(1,aspect/target));gl.uniform1f(gl.getUniformLocation(program,'mirror'),mirror?1:0);gl.uniform1f(gl.getUniformLocation(program,'angle'),hue*Math.PI/180);gl.uniform1f(gl.getUniformLocation(program,'monochrome'),colorIndex===4?1:0);gl.uniform1f(gl.getUniformLocation(program,'sky'),colorIndex===1?1:0);gl.uniform3f(gl.getUniformLocation(program,'lensColor'),...lensColors[colorIndex]);gl.drawArrays(gl.TRIANGLES,0,6);
 }
 function loop(time){
  requestAnimationFrame(loop);if(document.hidden||time-lastDraw<1000/24)return;lastDraw=time;
+ if(ready&&!$('result').open)eyeTracker.update(camera,time);
  draw();if(recorder?.state==='recording'){
   const elapsed=performance.now()-recordStarted;$('timer').textContent='● '+(elapsed/1000).toFixed(1)+'초';
   if(worker&&elapsed<7500&&gifFrames<75&&elapsed>=gifFrames*100){gifContext.drawImage(canvas,0,0,270,480);const pixels=gifContext.getImageData(0,0,270,480);worker.postMessage({type:'frame',buffer:pixels.data.buffer,width:270,height:480},[pixels.data.buffer]);gifFrames++;}
@@ -70,11 +96,12 @@ function loop(time){
  }
 }
 function bounded(promise,ms,text){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(text)),ms);})]).finally(()=>clearTimeout(timer));}
-function resetCamera(){cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;ready=false;busy=false;$('start').disabled=false;$('start').textContent='start';$('welcome').hidden=false;controls();}
+function resetCamera(){eyeTracker.stop();cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;ready=false;busy=false;$('start').disabled=false;$('start').textContent='start';$('welcome').hidden=false;controls();}
 async function openCamera(){
  if(inApp){launchBrowser();return;}
  if(busy)return;
  if(gl?.isContextLost()){location.reload();return;}
+ eyeTracker.stop();
  const attempt=++cameraAttempt;
  status.classList.remove('error');busy=true;ready=false;controls();$('start').disabled=true;$('start').textContent='start';message('카메라 권한을 허용해주세요.');
  stream?.getTracks().forEach(t=>t.stop());stream=null;
@@ -132,7 +159,7 @@ function beginRecording(){
   current.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
   current.onerror=()=>{recordFailed=true;message('녹화 중 오류가 발생했어요. 다시 촬영해주세요.');endRecording();};
   current.onstop=()=>{recordingStream?.getTracks().forEach(t=>t.stop());recorder=null;busy=false;worker?.postMessage({type:'finish'});if(!recordFailed)showResult(new Blob(chunks,{type:current.mimeType||'video/webm'}),false);controls();};
-  draw();current.start(250);recordStarted=performance.now();$('timer').hidden=false;$('shutter').classList.add('recording');$('flip').disabled=true;$('color').disabled=true;message('손을 떼면 녹화가 끝나요.');
+  draw();current.start(250);recordStarted=performance.now();$('timer').hidden=false;$('shutter').classList.add('recording');$('flip').disabled=true;$('color').disabled=true;$('lens-toggle').disabled=true;message('손을 떼면 녹화가 끝나요.');
  }catch(e){worker?.terminate();worker=null;recordingStream?.getTracks().forEach(t=>t.stop());recorder=null;message('이 기기에서 녹화를 시작하지 못했어요. 사진 촬영은 사용할 수 있어요.');controls();}
 }
 function endRecording(){clearTimeout(pressTimer);pressed=false;if(recorder?.state==='recording'){busy=true;recorder.stop();message('촬영한 영상을 준비하고 있어요…');}$('timer').hidden=true;$('shutter').classList.remove('recording');controls();}
@@ -178,8 +205,8 @@ for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
  // Keep the user's native link navigation: no synthetic click, share sheet or popup.
  saveNotice('다운로드 요청을 보냈어요. 휴대폰 다운로드 알림을 확인해주세요.');
 });
-frame.addEventListener('error',()=>{if(!ready)return;endRecording();stream?.getTracks().forEach(t=>t.stop());ready=false;fail('프레임 영상을 불러오지 못했어요. 연결 확인 후 다시 눌러주세요.');controls();});
-canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){endRecording();frame.pause();if(!recorder)resetCamera();else{stream?.getTracks().forEach(t=>t.stop());ready=false;$('welcome').hidden=false;}}});
-window.addEventListener('pagehide',()=>{cameraAttempt++;endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
+frame.addEventListener('error',()=>{if(!ready)return;eyeTracker.stop();endRecording();stream?.getTracks().forEach(t=>t.stop());ready=false;fail('프레임 영상을 불러오지 못했어요. 연결 확인 후 다시 눌러주세요.');controls();});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();eyeTracker.stop();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){eyeTracker.stop();endRecording();frame.pause();if(!recorder)resetCamera();else{stream?.getTracks().forEach(t=>t.stop());ready=false;$('welcome').hidden=false;}}});
+window.addEventListener('pagehide',()=>{eyeTracker.stop();cameraAttempt++;endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
 requestAnimationFrame(loop);
