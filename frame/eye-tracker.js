@@ -14,8 +14,8 @@ export function projectEyes(eyes,aspect,mirror,faceSpan=null,blink=[false,false]
   // Each eye spans 58% of the tracked face width, independent of natural eye size.
   const radius=Math.max(.015,faceWidth*.29);
   // The drawn pupils sit inward of each PNG center; compensate before adding the outward offset.
-  const shift=(i===0?-1:1)*(faceWidth*.11+radius*.16);
-  return [eye.x+axis[0]*shift,eye.y+axis[1]*shift*720/1280,radius,radius*(335/318)*720/1280,...axis,eye.blink];
+  const shift=(i===0?-1:1)*(faceWidth*.09+radius*.16);
+  return [eye.x+axis[0]*shift,eye.y+(axis[1]*shift-faceWidth*.025)*720/1280,radius,radius*(335/318)*720/1280,...axis,eye.blink];
  });
 }
 
@@ -59,7 +59,7 @@ export class EyeTracker{
  positions(aspect,mirror){
   if(!this.enabled||!this.points||performance.now()-this.received>300){this.smoothed=null;return null;}
   const next=projectEyes(this.points,aspect,mirror,this.faceSpan,this.blink);
-  this.smoothed=next.map((eye,i)=>eye.map((v,j)=>this.smoothed?v*.65+this.smoothed[i][j]*.35:v));
+  this.smoothed=next.map((eye,i)=>eye.map((v,j)=>j===6?v:(this.smoothed?v*.65+this.smoothed[i][j]*.35:v)));
   return this.smoothed;
  }
 }

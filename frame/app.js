@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=18';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=18';
+import {EyeTracker} from './eye-tracker.js?v=19';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=19';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -72,7 +72,7 @@ function setupGL(){
   vec2 closedTex=tex-vec2(0.,.25);
   vec4 closedEye=side<.5?texture2D(eyeLeftClosed,closedTex):texture2D(eyeRightClosed,closedTex);
   if(closedTex.y<0.||closedTex.y>1.)closedEye=vec4(0.);
-  vec4 sampleEye=mix(openEye,closedEye,side<.5?eyeBlink.x:eyeBlink.y);
+  vec4 sampleEye=(side<.5?eyeBlink.x:eyeBlink.y)>.5?closedEye:openEye;
   vec3 pixel=sampleEye.rgb/max(sampleEye.a,.001);
   float luminance=dot(pixel,vec3(.299,.587,.114));
   // Tint only the blue iris; black lashes and white sparkles keep their original colors.
