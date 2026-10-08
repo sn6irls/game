@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=17';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=17';
+import {EyeTracker} from './eye-tracker.js?v=18';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=18';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -181,7 +181,7 @@ function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.rev
 let captureTipTimer;
 function startCaptureTips(){
  clearInterval(captureTipTimer);
- const tips=['렌즈를 눌러서\n변신해봐!','촬영 버튼 꾹 누르면\n녹화 가능!'];
+ const tips=['렌즈를 눌러서 변신해봐!','촬영 버튼 꾹 누르면 녹화 가능!'];
  const label=document.querySelector('.capture-tip');let index=0;label.textContent=tips[0];
  captureTipTimer=setInterval(()=>{index=1-index;label.textContent=tips[index];},2800);
 }

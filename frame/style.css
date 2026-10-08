@@ -29,9 +29,9 @@ nav svg{width:28px;height:28px;shape-rendering:crispEdges}.pixel{fill:currentCol
 #eye-notice{position:absolute;top:77%;left:12%;right:12%;font-family:Galmuri,monospace;text-align:center;background:#fff5f9ed;padding:8px;border-radius:8px;font-size:11px;z-index:1}
 #eye-notice[hidden]{display:none}
 
-.capture-tip{display:block;min-width:154px;min-height:40px;white-space:pre-line}
+.capture-tip{display:block;min-width:154px;min-height:20px;white-space:nowrap}
 
 .save-buttons{display:grid;grid-template-columns:1fr 52px 1fr;gap:10px 12px;align-items:center}
-.save-buttons #save{grid-column:2;grid-row:1;justify-self:center}
-.save-buttons #gif{grid-column:3;grid-row:1;justify-self:start}
-.save-buttons .capture-tip{grid-column:1 / -1;grid-row:2;text-align:center;min-width:0;width:100%}
+.save-buttons #save{grid-column:2;grid-row:2;justify-self:center}
+.save-buttons #gif{grid-column:3;grid-row:2;justify-self:start}
+.save-buttons .capture-tip{grid-column:1 / -1;grid-row:1;text-align:center;min-width:0;width:100%}
