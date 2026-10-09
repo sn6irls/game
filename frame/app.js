@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=21';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=21';
+import {EyeTracker} from './eye-tracker.js?v=22';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=22';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -43,12 +43,14 @@ async function loadEyeSprites(){
  })().finally(()=>{eyeSpritesLoading=null;});
  return eyeSpritesLoading;
 }
-$('lens-toggle').onclick=()=>{
- if(!ready||busy||recorder)return;
- if(eyeTracker.enabled){eyeTracker.stop();return;}
+function enableLens(){
  eyeTracker.start();
  const activeWorker=eyeTracker.worker;
  loadEyeSprites().catch(()=>{if(eyeTracker.worker===activeWorker&&eyeTracker.enabled)eyeTracker.fail();});
+}
+$('lens-toggle').onclick=()=>{
+ if(!ready||busy||recorder)return;
+ if(eyeTracker.enabled)eyeTracker.stop();else enableLens();
 };
 function message(text){status.textContent=text;}
 function iconLabel(id,text){$(id).setAttribute('aria-label',text);$(id).title=text;}
@@ -169,7 +171,7 @@ async function openCamera(){
   await bounded(new Promise((resolve,reject)=>{function check(){if(attempt!==cameraAttempt){reject(Error('취소된 촬영'));return;}if(camera.videoWidth>16&&camera.videoHeight>16&&camera.readyState>=2&&frame.readyState>=2){resolve();return;}setTimeout(check,100);}check();}),10000,'화면을 받지 못했어요. 다시 눌러주세요.');
   if(attempt!==cameraAttempt)return;
   if(document.hidden){resetCamera();return;}
-  ready=true;$('welcome').hidden=true;$('start').textContent='start';status.classList.remove('error');message('');
+  ready=true;enableLens();$('welcome').hidden=true;$('start').textContent='start';status.classList.remove('error');message('');
  }catch(e){
   if(attempt!==cameraAttempt)return;
   cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;
@@ -181,7 +183,7 @@ function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.rev
 let captureTipTimer;
 function startCaptureTips(){
  clearInterval(captureTipTimer);
- const tips=['렌즈를 눌러서 변신해봐!','촬영 버튼 꾹 누르면 녹화 가능!'];
+ const tips=['오른쪽 하단의 렌즈를 눌러서 변신!','촬영 버튼을 꾹 누르면 녹화가능!'];
  const label=document.querySelector('.capture-tip');let index=0;label.textContent=tips[0];
  captureTipTimer=setInterval(()=>{index=1-index;label.textContent=tips[index];},2800);
 }
