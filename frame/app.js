@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=22';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=22';
+import {EyeTracker} from './eye-tracker.js?v=23';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=23';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -61,11 +61,11 @@ function setupGL(){
  program=gl.createProgram();
  gl.attachShader(program,shader(gl.VERTEX_SHADER,'attribute vec2 p; varying vec2 uv; void main(){uv=(p+1.0)*0.5;gl_Position=vec4(p,0,1);}'));
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`precision mediump float;
- varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;uniform vec3 lensColor;uniform vec4 eyeA;uniform vec4 eyeB;
- uniform sampler2D eyeLeft;uniform sampler2D eyeRight;uniform sampler2D eyeLeftClosed;uniform sampler2D eyeRightClosed;uniform vec2 eyeAxis;uniform vec2 eyeBlink;
- vec3 trackedLens(vec3 base,vec4 eye,float side){
+ varying vec2 uv;uniform sampler2D camera;uniform sampler2D frame;uniform vec2 crop;uniform float mirror;uniform float angle;uniform float monochrome;uniform float sky;uniform vec3 lensColor;uniform vec4 eyeA;uniform vec4 eyeB;uniform vec4 eyeC;uniform vec4 eyeD;
+ uniform sampler2D eyeLeft;uniform sampler2D eyeRight;uniform sampler2D eyeLeftClosed;uniform sampler2D eyeRightClosed;uniform vec2 eyeAxis;uniform vec2 eyeBlink;uniform vec2 eyeAxis2;uniform vec2 eyeBlink2;
+ vec3 trackedLens(vec3 base,vec4 eye,float side,vec2 faceAxis,float blink){
   if(eye.z<=0.)return base;
-  vec2 axis=normalize(eyeAxis),delta=(uv-eye.xy)*vec2(1.,1280./720.);
+  vec2 axis=normalize(faceAxis),delta=(uv-eye.xy)*vec2(1.,1280./720.);
   vec2 q=vec2(dot(delta,axis),dot(delta,vec2(-axis.y,axis.x)))/vec2(eye.z,eye.w*1280./720.);
   if(max(abs(q.x),abs(q.y))>=1.)return base;
   vec2 tex=q*.5+.5;
@@ -74,7 +74,7 @@ function setupGL(){
   vec2 closedTex=tex-vec2(0.,.25);
   vec4 closedEye=side<.5?texture2D(eyeLeftClosed,closedTex):texture2D(eyeRightClosed,closedTex);
   if(closedTex.y<0.||closedTex.y>1.)closedEye=vec4(0.);
-  vec4 sampleEye=(side<.5?eyeBlink.x:eyeBlink.y)>.5?closedEye:openEye;
+  vec4 sampleEye=blink>.5?closedEye:openEye;
   vec3 pixel=sampleEye.rgb/max(sampleEye.a,.001);
   float luminance=dot(pixel,vec3(.299,.587,.114));
   // Tint only the blue iris; black lashes and white sparkles keep their original colors.
@@ -83,7 +83,7 @@ function setupGL(){
   pixel=mix(pixel,color,blue*(1.-sky));
   return mix(base,pixel,sampleEye.a);
  }
- void main(){vec2 c=((uv-vec2(.5,.5))/vec2(.85,.60))*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;base=trackedLens(trackedLens(base,eyeA,0.),eyeB,1.);vec3 f=texture2D(frame,uv).rgb;
+ void main(){vec2 c=((uv-vec2(.5,.5))/vec2(.85,.60))*crop+.5;if(mirror>.5)c.x=1.-c.x;vec3 base=texture2D(camera,c).rgb;base=trackedLens(trackedLens(base,eyeA,0.,eyeAxis,eyeBlink.x),eyeB,1.,eyeAxis,eyeBlink.y);base=trackedLens(trackedLens(base,eyeC,0.,eyeAxis2,eyeBlink2.x),eyeD,1.,eyeAxis2,eyeBlink2.y);vec3 f=texture2D(frame,uv).rgb;
  // Recover a black-matted overlay: neutral shadows become light, not dark halos.
  float strength=max(f.r,max(f.g,f.b));
  float a=smoothstep(.015,.075,strength)*strength;
@@ -120,11 +120,14 @@ function draw(){
  gl.useProgram(program);gl.viewport(0,0,canvas.width,canvas.height);
  for(const [unit,texture,video] of [[0,cameraTexture,camera],[1,frameTexture,frame]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,video);}
  const aspect=camera.videoWidth/camera.videoHeight,target=(canvas.width*.85)/(canvas.height*.60);
- const eyes=eyeSprites?eyeTracker.positions(aspect,mirror):null;
- gl.uniform4f(gl.getUniformLocation(program,'eyeA'),...(eyes?.[0].slice(0,4)||[0,0,0,0]));
- gl.uniform4f(gl.getUniformLocation(program,'eyeB'),...(eyes?.[1].slice(0,4)||[0,0,0,0]));
- gl.uniform2f(gl.getUniformLocation(program,'eyeAxis'),...(eyes?.[0].slice(4,6)||[1,0]));
- gl.uniform2f(gl.getUniformLocation(program,'eyeBlink'),eyes?.[0][6]||0,eyes?.[1][6]||0);
+ const faces=eyeSprites?eyeTracker.positions(aspect,mirror):[];
+ for(let i=0;i<2;i++){
+  const eyes=faces[i],names=i===0?['eyeA','eyeB','eyeAxis','eyeBlink']:['eyeC','eyeD','eyeAxis2','eyeBlink2'];
+  gl.uniform4f(gl.getUniformLocation(program,names[0]),...(eyes?.[0].slice(0,4)||[0,0,0,0]));
+  gl.uniform4f(gl.getUniformLocation(program,names[1]),...(eyes?.[1].slice(0,4)||[0,0,0,0]));
+  gl.uniform2f(gl.getUniformLocation(program,names[2]),...(eyes?.[0].slice(4,6)||[1,0]));
+  gl.uniform2f(gl.getUniformLocation(program,names[3]),eyes?.[0][6]||0,eyes?.[1][6]||0);
+ }
  if(eyeSprites){
   const offset=(Math.floor(performance.now()/320)%2)*2;
   for(const [unit,index] of [[2,offset],[3,offset+1],[4,4],[5,5]]){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,eyeSprites[index]);}

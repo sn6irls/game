@@ -25,7 +25,7 @@ export class EyeTracker{
   this.stop();this.enabled=true;this.onState('loading');
   try{
    if(!globalThis.Worker||!globalThis.OffscreenCanvas||!globalThis.createImageBitmap)throw Error();
-   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=16',import.meta.url));
+   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=23',import.meta.url));
    this.timer=setTimeout(()=>this.fail(),30000);
    worker.onerror=()=>{if(this.worker===worker)this.fail();};
    worker.onmessage=({data})=>{
@@ -33,8 +33,7 @@ export class EyeTracker{
     clearTimeout(this.timer);
     if(data.type==='ready'){this.loaded=true;this.onState('on');}
     else if(data.type==='eyes'){
-     this.pending=false;this.points=data.eyes;this.faceSpan=data.faceSpan;this.blink=data.blink;this.received=performance.now();
-     if(!data.eyes)this.smoothed=null;
+     this.pending=false;this.faces=data.faces||[];this.received=performance.now();
     }else this.fail();
    };
    worker.postMessage({type:'init'});
@@ -42,7 +41,7 @@ export class EyeTracker{
  }
  fail(){this.stop();this.onState('error');}
  stop(){
-  clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.enabled=false;this.loaded=false;this.pending=false;this.points=null;this.smoothed=null;this.last=0;this.onState('off');
+  clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.enabled=false;this.loaded=false;this.pending=false;this.points=null;this.faces=[];this.smoothed=new Map();this.last=0;this.onState('off');
  }
  update(video,time){
   if(!this.loaded||this.pending||video.readyState<2||time-this.last<50)return;
@@ -57,9 +56,13 @@ export class EyeTracker{
   }).catch(()=>{if(this.worker===worker)this.fail();});
  }
  positions(aspect,mirror){
-  if(!this.enabled||!this.points||performance.now()-this.received>300){this.smoothed=null;return null;}
-  const next=projectEyes(this.points,aspect,mirror,this.faceSpan,this.blink);
-  this.smoothed=next.map((eye,i)=>eye.map((v,j)=>j===6?v:(this.smoothed?v*.65+this.smoothed[i][j]*.35:v)));
-  return this.smoothed;
+  if(!this.enabled||!this.faces?.length||performance.now()-this.received>300){this.smoothed=new Map();return [];}
+  const previous=this.smoothed||new Map(),current=new Map();
+  const results=this.faces.slice(0,2).map(face=>{
+   const next=projectEyes(face.eyes,aspect,mirror,face.faceSpan,face.blink),old=previous.get(face.id);
+   const smooth=next.map((eye,i)=>eye.map((v,j)=>j===6?v:(old?v*.65+old[i][j]*.35:v)));
+   current.set(face.id,smooth);return smooth;
+  });
+  this.smoothed=current;return results;
  }
 }
