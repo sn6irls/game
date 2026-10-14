@@ -942,9 +942,9 @@ function updateCamera(dt) {
   presentationCamera.bottom = -presentationCamera.top;
   presentationCamera.updateProjectionMatrix();
   presentationCamera.updateMatrixWorld();
-  // Keep the bowl in the lower part of the frame, below the character's eyes.
+  // Bring the finished bowl toward the center while keeping the character behind it.
   bowlAnchor.set(0,
-    finishLook.y + (finishDir.y * (3.2 - finishLook.z) - finishFrame * 0.32) / finishDir.z,
+    finishLook.y + (finishDir.y * (3.2 - finishLook.z) - finishFrame * 0.24) / finishDir.z,
     3.2);
   if (phase !== "tossing") {
     dish.position
