@@ -1,0 +1,306 @@
+@font-face {
+  font-family: NeoDunggeunmo;
+  src: url("../assets/fonts/neodgm.woff2") format("woff2");
+  font-display: swap;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #747e7b;
+  color: #fffbe5;
+  font-family: NeoDunggeunmo, monospace;
+  overscroll-behavior: none;
+  cursor: url("../assets/cursors/arrow.svg") 2 2, default;
+}
+#game {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  isolation: isolate;
+}
+#world {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font:
+    22px/1 NeoDunggeunmo,
+    monospace;
+  cursor: url("../assets/cursors/hand.svg") 10 2, pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 48px;
+  padding: 10px 14px;
+  text-shadow: 2px 2px #15271d;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+button:focus-visible {
+  outline: none;
+  color: #e4ff9a;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+button:active {
+  color: #e4ff9a;
+  transform: translateY(1px);
+}
+#controls {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 0 16px;
+}
+#controls button {
+  position: relative;
+}
+#action::before {
+  content: "▶";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+}
+#controls button[data-selected="true"] {
+  color: #efffb9;
+}
+#action {
+  font-size: 19px;
+  padding-left: 32px;
+}
+#guide {
+  position: absolute;
+  width: 70px;
+  height: 140px;
+  z-index: 2;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s;
+}
+#guide svg {
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  fill: #ffffff;
+  stroke: #354037;
+  stroke-width: 2;
+  stroke-linejoin: miter;
+  shape-rendering: crispEdges;
+}
+#guide path {
+  vector-effect: non-scaling-stroke;
+}
+.tap-indicator {
+  animation: guide-tap 1.2s steps(2, end) infinite;
+}
+#guide[data-mode="tap"] .guide-arrows,
+#guide[data-mode="vertical"] .tap-indicator {
+  display: none;
+}
+#guide[data-mode="vertical"] .tap-art {
+  animation: swipe 1.2s steps(3, end) infinite;
+}
+#instruction {
+  position: absolute;
+  top: calc(clamp(28px, 5dvh, 46px) + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 300px;
+  max-width: calc(100% - 40px);
+  min-height: 72px;
+  padding: 24px 34px;
+  pointer-events: none;
+  color: #45404a;
+  font: 400 16px/24px NeoDunggeunmo, monospace;
+  font-synthesis: none;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow: none;
+}
+.dialogue-bubble {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: #fffefd;
+  stroke: #d3ccd7;
+  stroke-width: 2;
+  stroke-linejoin: miter;
+  shape-rendering: crispEdges;
+}
+.dialogue-bubble path {
+  vector-effect: non-scaling-stroke;
+}
+.dialogue-bubble .bubble-shadow {
+  fill: #aea5b5;
+  stroke: #aea5b5;
+  opacity: 0.35;
+}
+#instruction-text {
+  position: relative;
+}
+#instruction.pop {
+  animation: caption-pop 0.27s ease-out;
+}
+#start {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  z-index: 5;
+}
+#start:active {
+  transform: none;
+}
+#start:disabled {
+  opacity: 1;
+}
+.title-art {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 32px);
+  font:
+    clamp(20px, 7.5vw, 32px)/1.35 NeoDunggeunmo,
+    monospace;
+  white-space: nowrap;
+  color: #fffbe0;
+  text-align: center;
+  text-shadow: 1px 1px #173524;
+  pointer-events: none;
+}
+#pixel-prompt {
+  position: absolute;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  font:
+    16px/20px NeoDunggeunmo,
+    monospace;
+  white-space: nowrap;
+  text-shadow: 2px 2px #15271d;
+  animation: blink 1.35s steps(2, end) infinite;
+  pointer-events: none;
+}
+#error {
+  position: absolute;
+  inset: 35% 10% auto;
+  text-align: center;
+  line-height: 1.8;
+  color: #fff;
+  background: #101621;
+  padding: 24px;
+  z-index: 6;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+[hidden] {
+  display: none !important;
+}
+@keyframes guide-tap {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes swipe {
+  0%,
+  100% {
+    transform: translateY(6px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0.4;
+  }
+}
+@keyframes caption-pop {
+  from {
+    transform: translate(-50%, -7px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+@media (pointer: fine) {
+  #world[data-phase="done"] {
+    cursor: url("../assets/cursors/hand.svg") 10 2, grab;
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  #controls {
+    bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  #instruction {
+    top: calc(8px + env(safe-area-inset-top));
+    width: 260px;
+    min-height: 60px;
+    padding: 18px 30px;
+  }
+  #pixel-prompt {
+    bottom: 65px;
+  }
+  .title-art {
+    font-size: 24px;
+    line-height: 1.15;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #guide svg,
+  .tap-indicator,
+  #instruction.pop,
+  #pixel-prompt {
+    animation: none !important;
+  }
+}

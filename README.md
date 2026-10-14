@@ -3,3 +3,5 @@
 바탕화면 꾸미기 Desktop Games https://sn6irls.github.io/game/desktop/
 
 렌즈 프레임 https://sn6irls.github.io/game/frame/
+
+김치빙수 Kimchi Bingsu Maker https://sn6irls.github.io/game/kimchibingsu/

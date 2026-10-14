@@ -1,0 +1,9 @@
+{
+  "name": "bishoujo-kimchibingsu-maker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node tools/server.cjs",
+    "check": "node tools/check.mjs"
+  }
+}
