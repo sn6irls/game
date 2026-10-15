@@ -793,8 +793,8 @@ document.addEventListener("visibilitychange", () => {
 installImageSave({
   canvas,
   render: renderScene,
-  filename: () => `kimchi-ice-${recipe + 1}.png`,
-  beforeOpen: () => { stopInput(); sound.unlock(); },
+  filename: () => `kimchi-ice-${recipe + 1}.jpg`,
+  beforeSave: () => { stopInput(); sound.unlock(); },
 });
 const smooth = (a, b, k, dt) =>
   THREE.MathUtils.lerp(a, b, 1 - Math.exp(-k * dt));

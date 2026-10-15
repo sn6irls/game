@@ -226,61 +226,6 @@ button:active {
   white-space: nowrap;
   border: 0;
 }
-#save-preview {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  margin: auto;
-  width: min(92vw, 520px);
-  max-height: calc(100vh - 32px);
-  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 16px;
-  border: 3px solid #c8d1ab;
-  background: #29342c;
-  color: #fffbe5;
-}
-#save-preview:not([open]) { display: none; }
-#save-preview::backdrop { background: rgb(12 19 14 / 75%); }
-.save-heading, .save-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-#save-title { margin: 0; font-size: 22px; font-weight: normal; }
-#save-image {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 52vh;
-  max-height: 52dvh;
-  margin: 8px auto;
-  object-fit: contain;
-  image-rendering: pixelated;
-  touch-action: auto;
-  user-select: auto;
-  -webkit-user-select: auto;
-  -webkit-touch-callout: default;
-}
-#save-status { margin: 14px 0; font-size: 16px; line-height: 1.5; }
-.save-actions { flex-wrap: wrap; justify-content: center; }
-#save-preview button, #save-download {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 10px 12px;
-  color: #fffbe5;
-  font: 16px/1.4 NeoDunggeunmo, monospace;
-  text-shadow: none;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  touch-action: manipulation;
-}
-#save-preview :focus-visible { outline: 2px solid #e4ff9a; outline-offset: 2px; }
 [hidden] {
   display: none !important;
 }
