@@ -849,6 +849,10 @@ function resize() {
   viewAspect = r.width / r.height;
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
   compactView = r.width <= 700 || coarsePointer;
+  // Give the smaller top dialogue clearance from the floating kimchi on wide views.
+  foodStart.x = r.width > r.height ? -2.05 : -1.25;
+  if (["intro", "closed", "opening", "open"].includes(phase))
+    food.position.x = foodStart.x;
   roomView.resize(r.width, coarsePointer);
   camera.left = -frameHeight * viewAspect / 2;
   camera.right = -camera.left;
@@ -891,7 +895,8 @@ function updateCamera(dt) {
     showcase = 1 - ease(THREE.MathUtils.clamp((phaseTime - 1.2) / 0.95, 0, 1));
   else showcase = smooth(showcase, presented ? 1 : 0, 4.2, dt);
   const aspect = viewAspect;
-  const finishFrame = Math.max(2.1 / aspect, 3.8);
+  // Pull back the finished bowl and room together, leaving the face visible.
+  const finishFrame = Math.max(2.65 / aspect, 4.6);
   finishCamera
     .copy(finishLook)
     .addScaledVector(finishDir, 18);
@@ -908,7 +913,7 @@ function updateCamera(dt) {
     serve,
   );
   frameHeight = smooth(frameHeight,
-    THREE.MathUtils.lerp(workingFrame, Math.max(5.4 / aspect, 7.0), showcase),
+    THREE.MathUtils.lerp(workingFrame, Math.max(6.1 / aspect, 7.8), showcase),
     7, dt);
   presentationHeight = smooth(presentationHeight,
     THREE.MathUtils.lerp(workingFrame, finishFrame, showcase),
@@ -955,9 +960,9 @@ function updateCamera(dt) {
   presentationCamera.bottom = -presentationCamera.top;
   presentationCamera.updateProjectionMatrix();
   presentationCamera.updateMatrixWorld();
-  // Bring the finished bowl toward the center while keeping the character behind it.
+  // Keep the finished bowl below the eyes so the character's glasses stay visible.
   bowlAnchor.set(0,
-    finishLook.y + (finishDir.y * (3.2 - finishLook.z) - finishFrame * 0.24) / finishDir.z,
+    finishLook.y + (finishDir.y * (3.2 - finishLook.z) - finishFrame * 0.26) / finishDir.z,
     3.2);
   if (phase !== "tossing") {
     dish.position
