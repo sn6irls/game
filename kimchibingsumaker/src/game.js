@@ -901,7 +901,7 @@ function updateCamera(dt) {
     THREE.MathUtils.clamp((aspect - 0.5) / 0.35, 0, 1),
   );
   // Tighten the home view without changing the drawing or finished-bowl zoom.
-  const homeFrame = Math.max(homeWidth / aspect, 10.2) * (compactView ? 0.96 : 0.86);
+  const homeFrame = Math.max(homeWidth / aspect, 10.2) * (compactView ? 0.96 : 0.92);
   const workingFrame = THREE.MathUtils.lerp(
     homeFrame,
     Math.max(1.85 / aspect, 2.85),
@@ -919,7 +919,7 @@ function updateCamera(dt) {
   camera.bottom = -camera.top;
   camera.updateProjectionMatrix();
   lookGoal.copy(homeLook);
-  lookGoal.y += compactView ? 0.1 : 0.35;
+  lookGoal.y += compactView ? 0.1 : 0;
   lookGoal.lerp(new THREE.Vector3(0, 0.8, 2.55), serve);
   const dir = homeDir
     .clone()
