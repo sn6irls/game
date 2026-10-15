@@ -2,62 +2,13 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#636851" />
-    <meta name="description" content="작은 방에서 만드는 나만의 김치빙수" />
-    <title>미소녀 김치빙수</title>
-    <link
-      rel="preload"
-      href="assets/fonts/neodgm.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <link rel="stylesheet" href="styles/game.css" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta http-equiv="refresh" content="0;url=../kimchibingsumaker/" />
+    <link rel="canonical" href="https://sn6irls.github.io/game/kimchibingsumaker/" />
+    <title>Kimchi Bingsu Maker</title>
+    <script>location.replace('../kimchibingsumaker/' + location.search + location.hash);</script>
   </head>
   <body>
-    <main id="game">
-      <canvas
-        id="world"
-        tabindex="0"
-        aria-label="미소녀 빙수기. 표시된 원을 터치하세요. 오른쪽 양갈래를 위아래로 움직여 갈고 빙수 위를 눌러 그리세요."
-      ></canvas>
-      <div id="guide" aria-hidden="true" hidden>
-        <svg class="tap-art" viewBox="0 0 80 160">
-          <g class="guide-arrows">
-            <path transform="translate(0 16)" d="M36 16H44V20H48V24H52V28H56V32H48V56H32V32H24V28H28V24H32V20H36Z" />
-            <path transform="translate(0 -16)" d="M32 104H48V128H56V132H52V136H48V140H44V144H36V140H32V136H28V132H24V128H32Z" />
-          </g>
-          <path class="tap-indicator" transform="translate(40 80) scale(1.2) translate(-40 -80)" fill-rule="evenodd" d="M36 70H44V72H48V76H50V84H48V88H44V90H36V88H32V84H30V76H32V72H36ZM36 74H44V76H46V84H44V86H36V84H34V76H36Z" />
-        </svg>
-      </div>
-      <div id="instruction" hidden>
-        <svg class="dialogue-bubble" viewBox="0 0 300 72" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-          <path class="bubble-shadow" transform="translate(0 2)" d="M72 4H228V6H252V8H268V10H278V14H286V18H292V24H296V30H294V34H290V36H286V38H290V40H294V44H296V50H292V56H286V60H278V64H264V66H244V68H56V66H36V64H22V60H14V56H8V50H4V44H6V40H10V38H14V36H10V34H6V30H4V24H8V18H14V14H22V10H32V8H48V6H72Z" />
-          <path d="M72 4H228V6H252V8H268V10H278V14H286V18H292V24H296V30H294V34H290V36H286V38H290V40H294V44H296V50H292V56H286V60H278V64H264V66H244V68H56V66H36V64H22V60H14V56H8V50H4V44H6V40H10V38H14V36H10V34H6V30H4V24H8V18H14V14H22V10H32V8H48V6H72Z" />
-        </svg>
-        <span id="instruction-text"></span>
-      </div>
-      <div id="controls">
-        <button id="action" aria-label="완성" hidden>완성</button>
-        <button id="save" aria-label="save" hidden>save</button>
-        <button id="retry" aria-label="re?" hidden>re?</button>
-      </div>
-      <button disabled id="start" aria-label="touch to start — 게임 시작">
-        <span class="title-art">kimchi bingsu maker</span>
-        <span id="pixel-prompt">loading...</span>
-      </button>
-      <div
-        id="announcement"
-        role="status"
-        aria-live="polite"
-        class="sr-only"
-      ></div>
-      <div id="error" hidden></div>
-    </main>
-    <script type="module" src="src/game.js"></script>
+    <a href="../kimchibingsumaker/">김치빙수 게임으로 이동</a>
   </body>
 </html>
