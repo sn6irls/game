@@ -44,6 +44,7 @@ const camera = new THREE.OrthographicCamera(-4, 4, 4, -4, 0.1, 80);
 const presentationCamera = camera.clone();
 presentationCamera.layers.set(1);
 let viewAspect = 1, frameHeight = 8.6, presentationHeight = 8.6;
+let compactView = false;
 camera.position.set(0.4, 4.5, 10);
 const look = new THREE.Vector3(0, 1.9, 0),
   cameraGoal = new THREE.Vector3(),
@@ -843,7 +844,9 @@ function resize() {
     false,
   );
   viewAspect = r.width / r.height;
-  roomView.resize(r.width, window.matchMedia("(pointer: coarse)").matches);
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  compactView = r.width <= 700 || coarsePointer;
+  roomView.resize(r.width, coarsePointer);
   camera.left = -frameHeight * viewAspect / 2;
   camera.right = -camera.left;
   camera.top = frameHeight / 2;
@@ -894,8 +897,10 @@ function updateCamera(dt) {
     9.8,
     THREE.MathUtils.clamp((aspect - 0.5) / 0.35, 0, 1),
   );
+  // Tighten the home view without changing the drawing or finished-bowl zoom.
+  const homeFrame = Math.max(homeWidth / aspect, 10.2) * (compactView ? 0.96 : 0.86);
   const workingFrame = THREE.MathUtils.lerp(
-    Math.max(homeWidth / aspect, 10.2),
+    homeFrame,
     Math.max(1.85 / aspect, 2.85),
     serve,
   );
@@ -910,7 +915,9 @@ function updateCamera(dt) {
   camera.top = frameHeight / 2;
   camera.bottom = -camera.top;
   camera.updateProjectionMatrix();
-  lookGoal.copy(homeLook).lerp(new THREE.Vector3(0, 0.8, 2.55), serve);
+  lookGoal.copy(homeLook);
+  lookGoal.y += compactView ? 0.1 : 0.35;
+  lookGoal.lerp(new THREE.Vector3(0, 0.8, 2.55), serve);
   const dir = homeDir
     .clone()
     .lerp(new THREE.Vector3(0, 0.86, 0.51).normalize(), serve)
@@ -922,7 +929,6 @@ function updateCamera(dt) {
   lookGoal.lerp(finishLook, showcase);
   if (!reduceMotion) {
     // Keep the breathing subtle at close range and quieter during touch/drag.
-    const homeFrame = Math.max(homeWidth / aspect, 10.2);
     const framing = Math.min(1, Math.min(frameHeight, presentationHeight) / homeFrame);
     const strength = phase === "intro" ? 1 :
       (activePointer === null ? 0.65 : 0.25) * framing;

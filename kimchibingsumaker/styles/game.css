@@ -190,11 +190,11 @@ button:active {
 }
 #pixel-prompt {
   position: absolute;
-  bottom: calc(70px + env(safe-area-inset-bottom));
+  bottom: calc(clamp(108px, 14dvh, 160px) + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   font:
-    16px/20px NeoDunggeunmo,
+    24px/28px NeoDunggeunmo,
     monospace;
   white-space: nowrap;
   text-shadow: 2px 2px #15271d;
@@ -274,7 +274,7 @@ button:active {
     padding: 18px 30px;
   }
   #pixel-prompt {
-    bottom: 65px;
+    bottom: calc(85px + env(safe-area-inset-bottom));
   }
 }
 @media (prefers-reduced-motion: reduce) {
