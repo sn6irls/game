@@ -850,7 +850,7 @@ function resize() {
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
   compactView = r.width <= 700 || coarsePointer;
   // Give the smaller top dialogue clearance from the floating kimchi on wide views.
-  foodStart.x = r.width > r.height ? -2.05 : -1.25;
+  foodStart.x = r.width > r.height ? -2.25 : -1.25;
   if (["intro", "closed", "opening", "open"].includes(phase))
     food.position.x = foodStart.x;
   roomView.resize(r.width, coarsePointer);
@@ -1187,8 +1187,10 @@ function updatePhases(dt) {
   }
   if (phase === "closing") {
     food.position.y = smooth(food.position.y, 2.05, 8, dt);
-    if (phaseTime > 0.35) food.visible = false;
-    if (phaseTime > 0.65) {
+    // Let the lid cover the kimchi; hide it only once the lid has fully seated.
+    if (phaseTime > 0.65 && Math.abs(lid.rotation.x - lidTarget) < 0.006) {
+      lid.rotation.x = lidTarget;
+      food.visible = false;
       setPhase("grind");
     }
   }
