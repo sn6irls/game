@@ -884,7 +884,7 @@ const homeDir = new THREE.Vector3(0, 0.22, 1).normalize(),
   homeLook = new THREE.Vector3(0, 2.15, 0),
   bowlAnchor = new THREE.Vector3();
 const finishCamera = new THREE.Vector3(),
-  finishLook = new THREE.Vector3(0, 1.5, 0.1),
+  finishLook = new THREE.Vector3(0, 1.0, 0.1),
   finishDir = new THREE.Vector3(0, 0.22, 1).normalize();
 function updateCamera(dt) {
   const targetServe = ["serving", "draw"].includes(phase) ? 1 : 0;
@@ -895,8 +895,8 @@ function updateCamera(dt) {
     showcase = 1 - ease(THREE.MathUtils.clamp((phaseTime - 1.2) / 0.95, 0, 1));
   else showcase = smooth(showcase, presented ? 1 : 0, 4.2, dt);
   const aspect = viewAspect;
-  // Pull back the finished bowl and room together, leaving the face visible.
-  const finishFrame = Math.max(2.65 / aspect, 4.6);
+  // Bring the finished bowl forward while keeping the room's wider framing.
+  const finishFrame = Math.max(2.1 / aspect, 3.8);
   finishCamera
     .copy(finishLook)
     .addScaledVector(finishDir, 18);
@@ -960,9 +960,9 @@ function updateCamera(dt) {
   presentationCamera.bottom = -presentationCamera.top;
   presentationCamera.updateProjectionMatrix();
   presentationCamera.updateMatrixWorld();
-  // Keep the finished bowl below the eyes so the character's glasses stay visible.
+  // Center the larger finished bowl, with just the character's eyes behind it.
   bowlAnchor.set(0,
-    finishLook.y + (finishDir.y * (3.2 - finishLook.z) - finishFrame * 0.26) / finishDir.z,
+    finishLook.y + (finishDir.y * (3.2 - finishLook.z) - finishFrame * 0.18) / finishDir.z,
     3.2);
   if (phase !== "tossing") {
     dish.position
