@@ -479,8 +479,8 @@ function stainDab(x, z, r, alpha) {
 function addSauce(x, z, r) {
   if (x * x + z * z > R * R * 0.96) return;
   r *= 0.85;
-  // Keep the original absorption reach, but deposit a thinner sauce line.
-  const lineRadius = r * 0.42;
+  // A slightly fuller fresh line; absorption reach is controlled separately.
+  const lineRadius = r * 0.47;
   stainDab(x, z, lineRadius * 2.05, 0.18);
   stainDab(x, z, lineRadius * 1.1, 0.3);
   wicking.push({ x, z, r, born: time, stage: 0 });
@@ -494,8 +494,8 @@ function updateAbsorption() {
       stainDab(
         d.x,
         d.z,
-        d.r * [2.3, 2.9, 3.4, 3.8][d.stage],
-        // A thinner stroke carries less liquid into the same absorption area.
+        d.r * [2.3, 2.8, 3.15, 3.4][d.stage],
+        // Keep the absorption translucent so the fresh stroke stays readable.
         [0.1, 0.08, 0.05, 0.035][d.stage] * 0.6,
       );
       d.stage++;

@@ -46,24 +46,6 @@ export function createRoom(scene, room) {
   });
   scene.add(room);
   room.updateMatrixWorld(true);
-  // Receive the existing light's faint shadow on the tabletop without changing
-  // its painted material or adding another shadow map / post-processing pass.
-  const tabletop = new THREE.Box3().setFromObject(room.getObjectByName("desk"));
-  const tableSize = tabletop.getSize(new THREE.Vector3());
-  const tableShadow = new THREE.Mesh(
-    new THREE.CircleGeometry(1, 32),
-    new THREE.ShadowMaterial({ color: "#253024", opacity: 0.8, depthWrite: false }),
-  );
-  tableShadow.name = "TabletopShadow";
-  tableShadow.rotation.x = -Math.PI / 2;
-  tableShadow.position.set(
-    (tabletop.min.x + tabletop.max.x) / 2,
-    tabletop.max.y + 0.008,
-    (tabletop.min.z + tabletop.max.z) / 2,
-  );
-  tableShadow.scale.set(tableSize.x * 0.43, tableSize.z * 0.43, 1);
-  tableShadow.receiveShadow = true;
-  scene.add(tableShadow);
   const backdrop = room.getObjectByName("Plane002");
   const bounds = new THREE.Box3().setFromObject(backdrop);
   const depth = (bounds.min.z + bounds.max.z) / 2;
