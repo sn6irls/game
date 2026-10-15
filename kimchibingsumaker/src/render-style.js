@@ -26,6 +26,7 @@ export function softenPaintedLighting(roots) {
 }
 
 export function renderPixelRatio(width, height) {
-  // Fine pixel edges, capped work on large/Retina screens. UI stays full size.
-  return Math.min(2 / 3, 1120 / Math.max(1, width), 640 / Math.max(1, height));
+  // Keep small texture lettering legible while retaining fine pixel edges.
+  // Cap large/Retina screens rather than multiplying work by devicePixelRatio.
+  return Math.min(0.9, 1440 / Math.max(1, width), 900 / Math.max(1, height));
 }

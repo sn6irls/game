@@ -901,7 +901,7 @@ function updateCamera(dt) {
     THREE.MathUtils.clamp((aspect - 0.5) / 0.35, 0, 1),
   );
   // Tighten the home view without changing the drawing or finished-bowl zoom.
-  const homeFrame = Math.max(homeWidth / aspect, 10.2) * (compactView ? 0.96 : 0.92);
+  const homeFrame = Math.max(homeWidth / aspect, 10.2) * (compactView ? 0.87 : 0.92);
   const workingFrame = THREE.MathUtils.lerp(
     homeFrame,
     Math.max(1.85 / aspect, 2.85),
