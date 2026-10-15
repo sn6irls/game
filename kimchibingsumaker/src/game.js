@@ -90,7 +90,7 @@ function mesh(geo, material, parent = scene, x = 0, y = 0, z = 0) {
   parent.add(m);
   return m;
 }
-const resizeRoom = createRoom(scene, models.room);
+const roomView = createRoom(scene, models.room);
 const { machine, lid, crank, tail, bowl, foods, sauces, bowlHome, bowlRim } = models;
 scene.add(machine);
 const dish = new THREE.Group();
@@ -843,7 +843,7 @@ function resize() {
     false,
   );
   viewAspect = r.width / r.height;
-  resizeRoom(r.width, window.matchMedia("(pointer: coarse)").matches);
+  roomView.resize(r.width, window.matchMedia("(pointer: coarse)").matches);
   camera.left = -frameHeight * viewAspect / 2;
   camera.right = -camera.left;
   camera.top = frameHeight / 2;
@@ -874,7 +874,7 @@ const homeDir = new THREE.Vector3(0, 0.22, 1).normalize(),
   homeLook = new THREE.Vector3(0, 2.15, 0),
   bowlAnchor = new THREE.Vector3();
 const finishCamera = new THREE.Vector3(),
-  finishLook = new THREE.Vector3(0, 2.15, 0.1),
+  finishLook = new THREE.Vector3(0, 1.5, 0.1),
   finishDir = new THREE.Vector3(0, 0.22, 1).normalize();
 function updateCamera(dt) {
   const targetServe = ["serving", "draw"].includes(phase) ? 1 : 0;
@@ -936,6 +936,8 @@ function updateCamera(dt) {
   camera.position.lerp(cameraGoal, 1 - Math.exp(-7 * dt));
   look.lerp(lookGoal, 1 - Math.exp(-7 * dt));
   camera.lookAt(look);
+  camera.updateMatrixWorld();
+  roomView.update(camera);
   presentationCamera.position.copy(camera.position);
   presentationCamera.quaternion.copy(camera.quaternion);
   presentationCamera.left = -presentationHeight * aspect / 2;

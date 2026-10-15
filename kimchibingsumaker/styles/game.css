@@ -188,21 +188,6 @@ button:active {
 #start:disabled {
   opacity: 1;
 }
-.title-art {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: calc(100% - 32px);
-  font:
-    clamp(20px, 7.5vw, 32px)/1.35 NeoDunggeunmo,
-    monospace;
-  white-space: nowrap;
-  color: #fffbe0;
-  text-align: center;
-  text-shadow: 1px 1px #173524;
-  pointer-events: none;
-}
 #pixel-prompt {
   position: absolute;
   bottom: calc(70px + env(safe-area-inset-bottom));
@@ -290,10 +275,6 @@ button:active {
   }
   #pixel-prompt {
     bottom: 65px;
-  }
-  .title-art {
-    font-size: 24px;
-    line-height: 1.15;
   }
 }
 @media (prefers-reduced-motion: reduce) {
