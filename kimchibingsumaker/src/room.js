@@ -51,7 +51,7 @@ export function createRoom(scene, room) {
       }
       // Cover the viewport with the actual image, uniformly scaled. The margin
       // accommodates the breathing camera without stretching its edge pixels.
-      const scale = Math.max(mobile ? 0.94 : 1.25,
+      const scale = 1.05 * Math.max(mobile ? 0.94 : 1.25,
         (-1.03 - shifted.x) / minX, (1.03 - shifted.x) / maxX,
         (-1.03 - shifted.y) / minY, (1.03 - shifted.y) / maxY);
       backdrop.scale.copy(restScale).multiplyScalar(scale);
