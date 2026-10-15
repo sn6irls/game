@@ -57,6 +57,18 @@
       ></div>
       <div id="error" hidden></div>
     </main>
+    <dialog id="save-preview" aria-labelledby="save-title" aria-describedby="save-status">
+      <div class="save-heading">
+        <h2 id="save-title">빙수 저장</h2>
+        <button id="save-close" type="button" aria-label="저장창 닫기" autofocus>닫기</button>
+      </div>
+      <img id="save-image" alt="내가 만든 빙수 — 길게 눌러 이미지 저장" hidden />
+      <p id="save-status" role="status" aria-live="polite"></p>
+      <div class="save-actions">
+        <button id="save-share" type="button" hidden>사진 저장 / 공유</button>
+        <a id="save-download" hidden>PNG 다운로드</a>
+      </div>
+    </dialog>
     <script type="module" src="src/game.js"></script>
   </body>
 </html>

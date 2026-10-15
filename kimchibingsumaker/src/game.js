@@ -3,6 +3,7 @@ import { loadModels } from "./models.js";
 import { createRoom } from "./room.js";
 import { createSeasoning } from "./seasoning.js";
 import { Sound } from "./sound.js";
+import { installImageSave } from "./save-image.js";
 import { softenPaintedLighting, renderPixelRatio } from "./render-style.js";
 const startButton = document.getElementById("start");
 startButton.disabled = true;
@@ -789,52 +790,12 @@ document.addEventListener("visibilitychange", () => {
     sound.ctx?.suspend();
   } else if (sound.ctx) sound.ctx.resume().catch(() => {});
 });
-$("save").onclick = async () => {
-  sound.unlock();
-  const btn = $("save");
-  btn.disabled = true;
-  renderScene();
-  const out = document.createElement("canvas");
-  const exportScale = Math.min(window.devicePixelRatio || 1, 2);
-  out.width = Math.round(canvas.clientWidth * exportScale);
-  out.height = Math.round(canvas.clientHeight * exportScale);
-  const ctx = out.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(canvas, 0, 0, out.width, out.height);
-  try {
-    const blob = await new Promise((resolve) =>
-      out.toBlob(resolve, "image/png"),
-    );
-    if (!blob) throw Error("PNG");
-    const file = new File([blob], `kimchi-ice-${recipe + 1}.png`, {
-      type: "image/png",
-    });
-    if (
-      /Android|iPhone|iPad/i.test(navigator.userAgent) &&
-      navigator.canShare?.({ files: [file] })
-    ) {
-      await navigator.share({ files: [file] });
-    } else {
-      const url = URL.createObjectURL(blob),
-        a = document.createElement("a");
-      a.href = url;
-      a.download = file.name;
-      document.body.append(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-    }
-    $("announcement").textContent = "사진을 저장했습니다";
-    sound.tap("glass");
-  } catch (e) {
-    if (e.name !== "AbortError") {
-      $("announcement").textContent = "저장하지 못했습니다. 다시 시도해주세요";
-      btn.textContent = "save";
-    }
-  } finally {
-    btn.disabled = false;
-  }
-};
+installImageSave({
+  canvas,
+  render: renderScene,
+  filename: () => `kimchi-ice-${recipe + 1}.png`,
+  beforeOpen: () => { stopInput(); sound.unlock(); },
+});
 const smooth = (a, b, k, dt) =>
   THREE.MathUtils.lerp(a, b, 1 - Math.exp(-k * dt));
 const ease = (t) => t * t * (3 - 2 * t);
