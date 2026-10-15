@@ -3,6 +3,7 @@ import { loadModels } from "./models.js";
 import { createRoom } from "./room.js";
 import { createSeasoning } from "./seasoning.js";
 import { Sound } from "./sound.js";
+import { softenPaintedLighting, renderPixelRatio } from "./render-style.js";
 const startButton = document.getElementById("start");
 startButton.disabled = true;
 let models;
@@ -22,8 +23,8 @@ let renderer;
 try {
   renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
-    preserveDrawingBuffer: true,
+    antialias: false,
+    preserveDrawingBuffer: false,
     powerPreference: "high-performance",
   });
 } catch (e) {
@@ -36,7 +37,7 @@ renderer.setPixelRatio(1);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-// Neutral sRGB output; apply any final color grading in one later pass.
+// Keep original colors; the gentle lighting needs no screen-space filter.
 renderer.toneMapping = THREE.NoToneMapping;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#858d8b");
@@ -49,15 +50,15 @@ camera.position.set(0.4, 4.5, 10);
 const look = new THREE.Vector3(0, 1.9, 0),
   cameraGoal = new THREE.Vector3(),
   lookGoal = new THREE.Vector3();
-scene.add(new THREE.HemisphereLight("#ffffff", "#a0a0a0", 0.9));
-const moon = new THREE.DirectionalLight("#ffffff", 0.2);
+scene.add(new THREE.HemisphereLight("#f2f6ff", "#999184", 0.84));
+const moon = new THREE.DirectionalLight("#e6f0ff", 0.18);
 moon.position.set(-5, 8, -4);
 scene.add(moon);
-const warm = new THREE.DirectionalLight("#ffffff", 1.1);
+const warm = new THREE.DirectionalLight("#fff2dc", 1.08);
 warm.position.set(-3, 8, 6);
 warm.target.position.set(0, 1, 0);
 warm.castShadow = true;
-warm.shadow.mapSize.set(2048, 2048);
+warm.shadow.mapSize.set(1024, 1024);
 Object.assign(warm.shadow.camera, {
   left: -5,
   right: 5,
@@ -256,7 +257,7 @@ const bowlLight = new THREE.PointLight("#ffffff", 0, 8, 2);
 scene.add(bowlLight);
 const pourLight = new THREE.SpotLight("#ffffff", 0, 9, 0.63, 0.6, 2);
 pourLight.castShadow = true;
-pourLight.shadow.mapSize.set(1024, 1024);
+pourLight.shadow.mapSize.set(512, 512);
 pourLight.shadow.bias = 0.0001;
 pourLight.shadow.normalBias = 0.035;
 pourLight.shadow.intensity = 0.25;
@@ -794,10 +795,12 @@ $("save").onclick = async () => {
   btn.disabled = true;
   renderScene();
   const out = document.createElement("canvas");
-  out.width = canvas.width;
-  out.height = canvas.height;
+  const exportScale = Math.min(window.devicePixelRatio || 1, 2);
+  out.width = Math.round(canvas.clientWidth * exportScale);
+  out.height = Math.round(canvas.clientHeight * exportScale);
   const ctx = out.getContext("2d");
-  ctx.drawImage(canvas, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(canvas, 0, 0, out.width, out.height);
   try {
     const blob = await new Promise((resolve) =>
       out.toBlob(resolve, "image/png"),
@@ -837,7 +840,7 @@ const smooth = (a, b, k, dt) =>
 const ease = (t) => t * t * (3 - 2 * t);
 function resize() {
   const r = canvas.getBoundingClientRect();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(renderPixelRatio(r.width, r.height));
   renderer.setSize(
     Math.max(1, Math.round(r.width)),
     Math.max(1, Math.round(r.height)),
@@ -1358,6 +1361,7 @@ for (const button of choices) {
 }
 dish.traverse((object) => object.layers.enable(1));
 fx.layers.enable(1);
+softenPaintedLighting([machine, models.room, bowl, ...foods, ...sauces.map(({ root }) => root)]);
 scene.traverse((object) => { if (object.isLight) object.layers.enable(1); });
 // Both views remain orthographic. A separate presentation view brings the bowl
 // close without magnifying the machine behind it or rescaling either model.
