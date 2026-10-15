@@ -119,7 +119,7 @@ export async function loadModels() {
   const loaded = await Promise.all(
     urls.map((name) =>
       loader.loadAsync(
-        new URL(`../assets/models/${name}.glb${name === "plane" ? "?v=ef8559b1" : ""}`, import.meta.url).href,
+        new URL(`../assets/models/${name}.glb?v=20261015-mobile`, import.meta.url).href,
       ),
     ),
   );

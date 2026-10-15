@@ -34,4 +34,33 @@ export function createRoom(scene, room) {
   fill.position.z -= 0.002;
   backdrop.parent.add(fill);
   scene.add(room);
+
+  // Keep the machine and bowl framing; only pull the room art back on phones.
+  backdrop.updateMatrix();
+  backdrop.geometry.computeBoundingBox();
+  const artCenter = backdrop.geometry.boundingBox.getCenter(new THREE.Vector3())
+    .applyMatrix4(backdrop.matrix);
+  const anchor = new THREE.Vector3(0, 0, artCenter.z);
+  const art = [backdrop, fill].map((object) => ({
+    object,
+    position: object.position.clone(),
+    scale: object.scale.clone(),
+  }));
+  const desk = room.getObjectByName("desk");
+  const deskScale = desk.scale.clone();
+  return (width, coarsePointer = false) => {
+    const mobile = width <= 700 || coarsePointer;
+    const distanceScale = mobile ? 0.94 : 1;
+    for (const item of art) {
+      item.object.scale.copy(item.scale).multiplyScalar(distanceScale);
+      item.object.position.copy(item.position).sub(anchor)
+        .multiplyScalar(distanceScale).add(anchor);
+    }
+    // Widen the tabletop without lifting its surface or the machine on it.
+    desk.scale.copy(deskScale);
+    if (mobile) {
+      desk.scale.x *= 1.08;
+      desk.scale.z *= 1.08;
+    }
+  };
 }

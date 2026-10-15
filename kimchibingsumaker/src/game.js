@@ -90,7 +90,7 @@ function mesh(geo, material, parent = scene, x = 0, y = 0, z = 0) {
   parent.add(m);
   return m;
 }
-createRoom(scene, models.room);
+const resizeRoom = createRoom(scene, models.room);
 const { machine, lid, crank, tail, bowl, foods, sauces, bowlHome, bowlRim } = models;
 scene.add(machine);
 const dish = new THREE.Group();
@@ -478,7 +478,7 @@ function addSauce(x, z, r) {
   if (x * x + z * z > R * R * 0.96) return;
   r *= 0.85;
   // Keep the original absorption reach, but deposit a thinner sauce line.
-  const lineRadius = r * 0.7;
+  const lineRadius = r * 0.42;
   stainDab(x, z, lineRadius * 2.05, 0.18);
   stainDab(x, z, lineRadius * 1.1, 0.3);
   wicking.push({ x, z, r, born: time, stage: 0 });
@@ -493,7 +493,8 @@ function updateAbsorption() {
         d.x,
         d.z,
         d.r * [2.3, 2.9, 3.4, 3.8][d.stage],
-        [0.1, 0.08, 0.05, 0.035][d.stage],
+        // A thinner stroke carries less liquid into the same absorption area.
+        [0.1, 0.08, 0.05, 0.035][d.stage] * 0.6,
       );
       d.stage++;
       if (d.stage === 4) wicking.splice(i, 1);
@@ -842,6 +843,7 @@ function resize() {
     false,
   );
   viewAspect = r.width / r.height;
+  resizeRoom(r.width, window.matchMedia("(pointer: coarse)").matches);
   camera.left = -frameHeight * viewAspect / 2;
   camera.right = -camera.left;
   camera.top = frameHeight / 2;
