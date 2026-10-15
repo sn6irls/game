@@ -4,4 +4,4 @@
 
 렌즈 프레임 https://sn6irls.github.io/game/frame/
 
-김치빙수 Kimchi Bingsu Maker https://sn6irls.github.io/game/kimchibingsumaker/
+김치빙수 만들기 KimchiBingsu Maker https://sn6irls.github.io/game/kimchibingsumaker/
