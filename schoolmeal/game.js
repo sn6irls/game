@@ -248,7 +248,7 @@ function deformJellies(){for(const o of items){const b=o.userData.body,rest=o.us
 function land(f){const o=f.object;o.scale.setScalar(1);o.rotation.x=0;const contact=supportAt(o);o.position.y=contact.y;const side=count%2?-.1:.1;const b={x:o.position.x,y:contact.y,z:o.position.z,tx:T.MathUtils.clamp(o.position.x+side,-1.35,1.35),tz:T.MathUtils.clamp(o.position.z+(count%2?.035:-.035),1.75,1.95),vx:side*1.7,vy:-.55,vz:0,squash:.86,vs:.3,tilt:side*.6,vt:side*2,support:contact.support};o.userData.body=b;
  let parent=contact.support,impact=1;while(parent){const pb=parent.userData.body;if(!pb)break;pb.vs-=.65*impact;pb.vy-=.4*impact;pb.vx+=side*1.3*impact;pb.vt+=side*2*impact;parent=pb.support;impact*=.65;}
  items.push(o);f.landed=true;f.age=0;ladle.visible=false;ladle.rotation.set(0,0,0);count++;food=null;chooseReaction();splat();splash(o);ui();}
-function drop(){if(!started||state!=='ready'||!food||count>=5)return;state='falling';whoosh();holdFood(food);fall={object:food,velocity:0,age:0,landed:false,ladleStart:ladle.position.clone()};ui()}
+function drop(){if(!started||state!=='ready'||!food||count>=5)return;ladle.position.set(aim.x,Math.max(3.65,2.41+count*.495),aim.z);holdFood(food);state='falling';whoosh();fall={object:food,velocity:0,age:0,landed:false,ladleStart:ladle.position.clone()};ui()}
 
 
 function whoosh(){window.MealSFX?.drop();}

@@ -171,3 +171,15 @@ html[lang=en] .actions #save{max-width:108px}
 @media(prefers-reduced-motion:reduce){#sideTools img,#picker>div button img,#speech::before{animation:none;filter:none;transform:none}}
 
 #picker #close,#backgroundPicker #backgroundClose{left:auto;right:max(14px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top))}
+
+/* Camera preview uses a monochrome frame and one round shutter control. */
+#liveCamera{background:#080808;border:2px solid white;border-radius:12px;padding:12px;width:min(440px,94vw);color:white;box-shadow:0 12px 48px #0008}
+#liveCamera::backdrop{background:#0009;backdrop-filter:none}
+#cameraPreview{background:#000;border:1px solid #fff5;border-radius:6px;height:min(60svh,470px)}
+#cameraClose{background:#111b;color:white;border:1px solid #fff7;right:20px;top:20px}
+#liveCamera .cameraActions{justify-content:center;align-items:center;gap:20px;padding:16px 0 4px}
+#liveCamera .cameraActions button{flex:none;width:66px;height:66px;padding:0;border:2px solid #fff;border-radius:50%;background:#111;color:white;font-size:30px}
+#liveCamera #shutter{position:relative;width:72px;height:72px;background:#111!important;border:2px solid white;font-size:0}
+#shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:white;transition:transform .12s}
+#shutter:active:not(:disabled)::after{transform:scale(.9)}
+#cameraMessage{color:white;font-size:13px;margin:12px 4px 0;min-height:0}
