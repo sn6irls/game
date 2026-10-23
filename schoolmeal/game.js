@@ -105,7 +105,12 @@ $('backgroundPicker').onclick=e=>{if(e.target===$('backgroundPicker')){const r=e
 $('backgroundInput').onchange=async e=>{const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);try{await changeBackground(url);}finally{URL.revokeObjectURL(url);e.target.value='';}};
 changeBackground('assets/bg2.jpg',true,false);
 const ladle=new T.Group();scene.add(ladle);ladle.visible=false;
-function facial(){if(started)window.MealSFX?.expression(mood);window.MealMusic?.setMood(mood>=8?6:0);model3d?.react(mood)}
+function facial(){
+ // Dim only the photographic backdrop for contempt; also applies to saved images.
+ const brightness=mood===9?.14:.82;backdrop.material.color.setRGB(brightness,brightness,brightness);
+ scene.background.set(mood===9?'#05070a':'#101720');
+ if(started)window.MealSFX?.expression(mood);window.MealMusic?.setMood(mood>=8?6:0);model3d?.react(mood);
+}
 model3d=window.createSchoolModel({scene,camera,renderer,ladle,onReady:()=>{facial();ui();document.documentElement.dataset.model='ready'},onError:()=>{$('status').textContent='모델을 불러오지 못했어요. 새로고침해 주세요.'}});
 // Food is tilted toward the camera: its lowest contact lies toward the front of its footprint.
 window.mealSurface=(x,z)=>model3d?.floorHeight(x,z+.39)??1.65;
