@@ -1,8 +1,6 @@
-// Keep test mode until release is explicitly requested. Indices are zero-based.
+// Release reactions: wink through disgust have equal weight; contempt has half weight.
 window.MealExpressions={
-  "mode": "test",
-  "testOptions": {"pausePicker": true, "muteMusic": true},
-  "testOrder": [2, 3, 6, 8],
+  "mode": "random",
   "weights": [
     0,
     0,

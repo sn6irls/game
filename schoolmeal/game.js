@@ -199,11 +199,19 @@ function holdFood(o){const scoop=o.userData.scoop;o.scale.setScalar(1);o.rotatio
 function release(o){scene.remove(o);o.geometry.dispose();(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());o.userData.texture?.dispose()}
 async function load(e){const f=e.target.files[0];if(!f)return;const token=++serial;state='loading';ui();const url=URL.createObjectURL(f);try{const img=new Image();img.src=url;await img.decode();if(token!==serial)return;food=foodMesh(img);state='ready';ladle.visible=true;ui()}catch{state=count?'served':'idle';ui();$('status').textContent=w[lang].error}finally{URL.revokeObjectURL(url);e.target.value=''}}$('cameraInput').onchange=load;$('fileInput').onchange=load;
 $('startGame').onclick=async()=>{if(started)return;started=true;window.MealSFX?.start();window.MealMusic?.start();state='intro';document.documentElement.classList.remove('prestart');ui();await model3d.beginIntro();state='idle';ui();};
-$('feed').onclick=()=>{if(!started||state==='intro')return;if(count>=5){fullRequested=true;reactionVisible=true;ui();return}ui();$('picker').showModal()};$('camera').onclick=()=>{$('picker').close();$('cameraInput').click()};$('gallery').onclick=()=>{$('picker').close();$('fileInput').click()};$('close').onclick=()=>$('picker').close();$('picker').onclick=e=>{if(e.target===$('picker')){const r=$('picker').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('picker').close()}};
+$('feed').onclick=()=>{if(!started||state==='intro')return;if(count>=5){fullRequested=true;reactionVisible=true;ui();return}ui();$('picker').showModal()};$('camera').onclick=()=>{$('picker').close();$('cameraInput').click()};$('gallery').onclick=async()=>{
+ $('picker').close();
+ // Use a file-only picker where available. Mobile fallback has no camera capture hint.
+ if(typeof window.showOpenFilePicker==='function'){
+  try{const [handle]=await window.showOpenFilePicker({multiple:false,excludeAcceptAllOption:true,types:[{description:lang==='ko'?'이미지':'Images',accept:{'image/png':['.png'],'image/jpeg':['.jpg','.jpeg'],'image/webp':['.webp'],'image/gif':['.gif'],'image/avif':['.avif']}}]});
+   if(handle)await load({target:{files:[await handle.getFile()],value:''}});return;
+  }catch(error){if(error.name==='AbortError')return;}
+ }
+ $('fileInput').click();
+};$('close').onclick=()=>$('picker').close();$('picker').onclick=e=>{if(e.target===$('picker')){const r=$('picker').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('picker').close()}};
 function resetReaction(){clearReaction=false;fullRequested=false;reactionVisible=true;mood=0;variant=Math.floor(Math.random()*w[lang].say[0].length);facial()}
 function chooseReaction(){clearReaction=false;fullRequested=false;
- if(expressionConfig.mode==='test')mood=expressionConfig.testOrder[(count-1)%expressionConfig.testOrder.length];
- else{let r=Math.random()*expressionConfig.weights.reduce((a,b)=>a+b,0);mood=9;for(let i=0;i<10;i++){r-=expressionConfig.weights[i];if(r<0){mood=i;break}}}
+ {let r=Math.random()*expressionConfig.weights.reduce((a,b)=>a+b,0);mood=9;for(let i=0;i<10;i++){r-=expressionConfig.weights[i];if(r<0){mood=i;break}}}
  variant=Math.floor(Math.random()*w[lang].say[mood].length);reactionVisible=true;facial();}
 
 
@@ -291,17 +299,9 @@ $('save').onclick=async()=>{const button=$('save');button.disabled=true;try{
  if(canShare){try{await navigator.share({files:[file]});}catch(error){if(error.name==='AbortError')return;download(blob);}}
  else download(blob);$('status').textContent=w[lang].saved;
  }catch{$('status').textContent=w[lang].saveError;}finally{button.disabled=false;}};
-function download(blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='super-jjang-lunch.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+function download(blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='super-jjang-lunch.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 function resize(){const r=canvas.parentElement.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.setFocalLength(150);camera.updateProjectionMatrix();fitBackdrop()}window.addEventListener('resize',resize);resize();ui();
-// Native file pickers outlive the in-game dialog. Release the pause only on selection/cancel.
-const pendingImagePickers=new Set();
-for(const id of ['fileInput','cameraInput','backgroundInput']){
- const input=$(id);
- input.addEventListener('click',()=>pendingImagePickers.add(id));
- for(const event of ['change','cancel'])input.addEventListener(event,()=>pendingImagePickers.delete(id));
-}
-function imageSelectionOpen(){return pendingImagePickers.size>0||$('picker').open||$('backgroundPicker').open||$('liveCamera')?.open||state==='loading';}
-function frame(t){const dt=Math.min((t-last)/1000,.04)||.016;last=t;if(window.MealExpressions?.mode==='test'&&window.MealExpressions?.testOptions?.pausePicker&&imageSelectionOpen()){renderer.render(scene,camera);requestAnimationFrame(frame);return;}time+=dt;model3d?.update(dt);stepScatter(dt);if(state==='ready'){ladle.position.set(aim.x,Math.max(3.65,2.41+count*.495),aim.z);holdFood(food)}if(fall){const f=fall;f.age+=dt;if(!f.landed){ladle.position.copy(f.ladleStart);ladle.rotation.set(1.15*(1-Math.exp(-f.age*7)),0,0);const withdraw=T.MathUtils.smoothstep(f.age,.12,.34);ladle.position.z-=withdraw*1.25;if(f.age>.34){const turn=T.MathUtils.smoothstep(f.age,.34,.62);f.object.rotation.x=T.MathUtils.lerp(f.object.userData.scoop.angle,0,turn);f.velocity+=8*dt;f.object.position.y-=f.velocity*dt;}const target=supportAt(f.object).y;if(f.object.position.y<=target)land(f)}else if(f.age>1.05){fall=null;state='served';ui()}}stepJellies(dt);deformJellies();MealContacts.solve(items);for(let i=droplets.length-1;i>=0;i--){const d=droplets[i],u=d.userData;u.life+=dt;u.vy-=7*dt;d.position.x+=u.vx*dt;d.position.y+=u.vy*dt;d.position.z+=u.vz*dt;d.scale.setScalar(Math.max(.001,.045*(1-u.life/.5)));if(u.life>.5){scene.remove(d);d.geometry.dispose();d.material.dispose();droplets.splice(i,1)}}model3d?.shadows([...items,...(food?[food]:[])],dt);renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+function frame(t){const dt=Math.min((t-last)/1000,.04)||.016;last=t;time+=dt;model3d?.update(dt);stepScatter(dt);if(state==='ready'){ladle.position.set(aim.x,Math.max(3.65,2.41+count*.495),aim.z);holdFood(food)}if(fall){const f=fall;f.age+=dt;if(!f.landed){ladle.position.copy(f.ladleStart);ladle.rotation.set(1.15*(1-Math.exp(-f.age*7)),0,0);const withdraw=T.MathUtils.smoothstep(f.age,.12,.34);ladle.position.z-=withdraw*1.25;if(f.age>.34){const turn=T.MathUtils.smoothstep(f.age,.34,.62);f.object.rotation.x=T.MathUtils.lerp(f.object.userData.scoop.angle,0,turn);f.velocity+=8*dt;f.object.position.y-=f.velocity*dt;}const target=supportAt(f.object).y;if(f.object.position.y<=target)land(f)}else if(f.age>1.05){fall=null;state='served';ui()}}stepJellies(dt);deformJellies();MealContacts.solve(items);for(let i=droplets.length-1;i>=0;i--){const d=droplets[i],u=d.userData;u.life+=dt;u.vy-=7*dt;d.position.x+=u.vx*dt;d.position.y+=u.vy*dt;d.position.z+=u.vz*dt;d.scale.setScalar(Math.max(.001,.045*(1-u.life/.5)));if(u.life>.5){scene.remove(d);d.geometry.dispose();d.material.dispose();droplets.splice(i,1)}}model3d?.shadows([...items,...(food?[food]:[])],dt);renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 
 
 if(new URLSearchParams(location.search).has('test'))window.mealTest={snapshot:()=>({...model3d.snapshot(),state,count,mood,started,aim:{...aim},ladlePosition:ladle.position.toArray(),scatterCount:scattered.length,scatterPositions:scattered.map(f=>f.o.position.toArray()),foodPosition:items.at(-1)?.position.toArray(),ladleRotation:ladle.rotation.toArray(),heldScale:food?.scale.toArray(),heldPosition:food?.position.toArray()}),expression:i=>model3d.expression(i),thumbnail:b=>{model3d.thumbnail(b);$('speech').hidden=b;document.querySelector('.controls').hidden=b;$('status').hidden=b},drop};
