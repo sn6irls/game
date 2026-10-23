@@ -1,4 +1,4 @@
-// Release reactions: wink through disgust have equal weight; contempt has half weight.
+// Release reactions: wink through disgust are equally likely; contempt is about 1%.
 window.MealExpressions={
   "mode": "random",
   "weights": [
@@ -11,7 +11,7 @@ window.MealExpressions={
     1,
     1,
     1,
-    0.5
+    0.07
   ],
   "dialogue": {
     "ko": [
