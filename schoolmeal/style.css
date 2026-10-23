@@ -59,7 +59,7 @@ html[lang=en] #feed img{width:158px;height:42px}html[lang=en] #save img{width:92
 @media(max-width:350px){.controls{left:14px;right:14px}.actions{gap:14px}.actions button,.actions .primary{padding:8px 4px;height:72px;min-height:72px}.actions button img,#feed img,#save img{width:122px;height:55px}#speech{width:132px;min-height:114px;font-size:14px;padding:12px 17px 26px 13px}}
 @media(max-height:650px){#speech{top:max(10px,env(safe-area-inset-top));width:132px;min-height:114px;font-size:14px;padding:12px 17px 26px 13px}.actions button,.actions .primary{height:62px;min-height:62px;padding:4px 8px}.actions button img,#feed img,#save img{height:50px}}
 
-html[lang=ko] .actions button img{height:50px;object-fit:fill}
+html[lang=ko] .actions button img{height:50px;object-fit:contain}
 @media(max-width:350px){html[lang=ko] .actions button img{height:46px}}
 @media(max-height:650px){html[lang=ko] .actions button img{height:44px}}
 
@@ -116,7 +116,7 @@ html[lang] .actions #save img{width:145px;max-width:100%;height:60px;object-fit:
 /* Match lettering size across Save / Give lunch, in both languages. */
 .actions{gap:16px}
 .actions #save,.actions #feed{flex:1 1 0;max-width:200px}
-html[lang=ko] .actions #save img,html[lang=ko] .actions #feed img{width:164px;height:58px;max-height:none;object-fit:fill}
+html[lang=ko] .actions #save img,html[lang=ko] .actions #feed img{width:164px;height:58px;max-height:none;object-fit:contain}
 html[lang=en] .actions #feed{flex:2.2 1 0;max-width:250px}
 html[lang=en] .actions #save{flex:1 1 0;max-width:114px}
 html[lang=en] .actions #feed img{width:240px;height:auto;max-height:60px;object-fit:contain}
@@ -167,7 +167,7 @@ html[lang=en] .actions #save{max-width:108px}
 /* Move only the drawn bubble outline; keep the dialogue still and centered. */
 #speech{background:none;isolation:isolate}
 #speech::before{content:'';position:absolute;inset:0;z-index:-1;background:url('assets/font/말풍선.png') center/100% 100% no-repeat;pointer-events:none;animation:subtle-ink-wiggle 1.08s steps(1,end) infinite;animation-delay:-.47s;transform-origin:center}
-@keyframes subtle-ink-wiggle{0%,100%{filter:url('#ink-subtle-0');transform:translate(-.35px,0) rotate(-.3deg) scale(1.008,.994)}25%{filter:url('#ink-subtle-1');transform:translate(.35px,.4px) rotate(.25deg) scale(.994,1.008)}50%{filter:url('#ink-subtle-2');transform:translate(.15px,-.3px) rotate(-.15deg) scale(1.004,.996)}75%{filter:url('#ink-subtle-3');transform:translate(-.3px,.2px) rotate(.3deg) scale(.996,1.004)}}
+@keyframes subtle-ink-wiggle{0%,100%{filter:url('#ink-subtle-0');transform:translate(-.35px,0) rotate(-.3deg)}25%{filter:url('#ink-subtle-1');transform:translate(.35px,.4px) rotate(.25deg)}50%{filter:url('#ink-subtle-2');transform:translate(.15px,-.3px) rotate(-.15deg)}75%{filter:url('#ink-subtle-3');transform:translate(-.3px,.2px) rotate(.3deg)}}
 @media(prefers-reduced-motion:reduce){#sideTools img,#picker>div button img,#speech::before{animation:none;filter:none;transform:none}}
 
 #picker #close,#backgroundPicker #backgroundClose{left:auto;right:max(14px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top))}
@@ -183,3 +183,7 @@ html[lang=en] .actions #save{max-width:108px}
 #shutter::after{content:'';position:absolute;inset:5px;border-radius:50%;background:white;transition:transform .12s}
 #shutter:active:not(:disabled)::after{transform:scale(.9)}
 #cameraMessage{color:white;font-size:13px;margin:12px 4px 0;min-height:0}
+
+/* Preserve original image proportions at every breakpoint and in both languages. */
+html[lang] .actions #feed img,html[lang] .actions #save img{height:auto;max-height:none;object-fit:contain;aspect-ratio:auto}
+#speech::before{background-size:contain}
