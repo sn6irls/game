@@ -5,3 +5,6 @@
 렌즈 프레임 Lens Frame https://sn6irls.github.io/game/frame/
 
 김치빙수 만들기 KimchiBingsu Maker https://sn6irls.github.io/game/kimchibingsumaker/
+
+
+슈퍼짱 급식주기 SchoolMeal Demo https://sn6irls.github.io/game/schoolmeal/
