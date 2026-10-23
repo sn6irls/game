@@ -1,0 +1,3 @@
+/* Demo-only portrait recording layout. Remove this stylesheet to restore the original positions in style.css. */
+#speech{left:max(32px,calc(50% - 300px));top:max(24px,7svh)}
+#sideTools{left:auto;right:max(32px,calc(50% - 300px));top:max(24px,7svh)}
