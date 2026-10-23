@@ -190,3 +190,8 @@ html[lang] .actions #feed img,html[lang] .actions #save img{height:auto;max-heig
 
 /* Equal visual lettering height, with each image's original aspect ratio. */
 html[lang=ko] .actions #save img,html[lang=ko] .actions #feed img{width:auto;height:min(56px,calc((100vw - 90px) / 6));max-width:100%;object-fit:contain}
+
+/* Match English lettering height without independently squeezing either image. */
+html[lang=en] .actions{--action-letter-height:min(48px,calc((100vw - 104px) / 6.12))}
+html[lang=en] .actions #save,html[lang=en] .actions #feed{flex:0 0 auto;max-width:none;padding:6px}
+html[lang=en] .actions #save img,html[lang=en] .actions #feed img{width:auto;height:var(--action-letter-height);max-width:none;max-height:none;object-fit:contain}
