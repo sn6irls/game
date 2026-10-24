@@ -27,8 +27,8 @@ for(let i=0;i<backgroundVertices.count;i++){
  backgroundVertices.setZ(i,0);
 }
 backgroundGeometry.computeVertexNormals();backgroundGeometry.computeBoundingSphere();
-// A light, neutral dimming keeps the original classroom colors.
-const backdrop=new T.Mesh(backgroundGeometry,new T.MeshBasicMaterial({color:new T.Color().setRGB(.82,.82,.82),toneMapped:false,fog:false}));
+// Preserve the photograph colors; normal dimming is limited to the outer vignette.
+const backdrop=new T.Mesh(backgroundGeometry,new T.MeshBasicMaterial({color:new T.Color().setRGB(1,1,1),toneMapped:false,fog:false}));
 // Screen-space vignette affects the background material only, including saved images.
 const backdropVignette={enabled:{value:0},resolution:{value:new T.Vector2(1,1)}};
 backdrop.material.onBeforeCompile=shader=>{
@@ -37,11 +37,11 @@ backdrop.material.onBeforeCompile=shader=>{
  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform float mealVignetteEnabled;\nuniform vec2 mealVignetteResolution;');
  shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',`#include <colorspace_fragment>
   vec2 edgePosition=(gl_FragCoord.xy/mealVignetteResolution-0.5)*2.0;
-  float edgeShade=smoothstep(0.28,0.95,length(edgePosition))*mealVignetteEnabled;
-  gl_FragColor.rgb*=mix(1.0,0.35,edgeShade);
+  float edgeShade=smoothstep(0.80,1.40,length(edgePosition))*mealVignetteEnabled;
+  gl_FragColor.rgb*=mix(1.0,0.80,edgeShade);
  `);
 };
-backdrop.material.customProgramCacheKey=()=> 'desktop-background-vignette-v1';
+backdrop.material.customProgramCacheKey=()=> 'desktop-background-vignette-edges-v2';
 backdrop.position.set(0,.8,-18);backdrop.visible=false;scene.add(backdrop);
 let backdropAspect=1.5,backdropSourceAspect=1.5,defaultBackdrop=true;
 function fitBackdrop(){
@@ -97,7 +97,7 @@ changeBackground('assets/bg2.jpg',true,false);
 const ladle=new T.Group();scene.add(ladle);ladle.visible=false;
 function facial(){
  // Dim only the photographic backdrop for contempt; also applies to saved images.
- const brightness=mood===9?.14:.82;backdrop.material.color.setRGB(brightness,brightness,brightness);
+ const brightness=mood===9?.14:1;backdrop.material.color.setRGB(brightness,brightness,brightness);
  scene.background.set(mood===9?'#05070a':'#101720');
  if(started)window.MealSFX?.expression(mood);window.MealMusic?.setMood(mood>=8?6:0);model3d?.react(mood);
 }

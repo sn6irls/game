@@ -8,7 +8,7 @@ html,body{background:#101720}.small,.small button{color:#aebbc4}#status{color:#c
 
 #startScreen{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:0 24px max(80px,env(safe-area-inset-bottom));background:linear-gradient(transparent 60%,#10172080)}#startGame{padding:22px 28px;border-radius:24px;background:#d8ed95;color:#3d5130;font-size:20px;font-weight:700;box-shadow:0 5px 20px #0004}
 
-#scene{filter:blur(0) brightness(1);transition:filter 1.45s ease;will-change:filter}.prestart #scene{filter:blur(7px) brightness(.72)}@media(prefers-reduced-motion:reduce){#scene{transition-duration:.25s}.prestart #scene{filter:blur(3px) brightness(.85)}}
+#scene{filter:blur(0) brightness(1);transition:filter 1.45s ease;will-change:filter}.prestart #scene{filter:blur(7px) brightness(1)}@media(prefers-reduced-motion:reduce){#scene{transition-duration:.25s}.prestart #scene{filter:blur(3px) brightness(1)}}
 
 #picker .picker-hint{margin:16px 2px 0;font-size:11px;font-weight:400;line-height:1.6;color:#7a826e;word-break:keep-all}
 
@@ -20,7 +20,7 @@ html,body{background:#101720}.small,.small button{color:#aebbc4}#status{color:#c
 @font-face{font-family:MealPixel;src:url('assets/font/neodgm.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
 html,body,button,input,dialog{font-family:MealPixel,monospace;font-weight:400}
 button:focus-visible{outline:3px solid #167496;outline-offset:4px}
-.prestart #scene{filter:blur(1.5px) brightness(.94)}#scene{transition:filter 1.1s ease}
+.prestart #scene{filter:blur(1.5px) brightness(1)}#scene{transition:filter 1.1s ease}
 #startScreen{align-items:center;padding:24px;background:linear-gradient(#10172008,#10172020)}
 #startGame{width:min(240px,60vw);padding:18px 20px;background:#fffffff0;border:2px solid #151a16;border-radius:8px;box-shadow:4px 5px 0 #0005}
 #startGame img{display:block;width:100%;height:auto;max-height:65svh;object-fit:contain}
@@ -35,7 +35,7 @@ button:focus-visible{outline:3px solid #167496;outline-offset:4px}
 #speech:after{display:none}dialog p{font-weight:400}dialog{border:2px solid #202820;border-radius:10px}dialog>div button{border-radius:5px}dialog::backdrop{backdrop-filter:blur(2px)}
 @media(min-width:900px){#speech{left:calc(50% - 350px);top:20%;width:175px;min-height:151px;font-size:18px}.actions button{max-width:240px}}
 @media(max-height:650px){#startGame{width:180px;padding:10px 16px}#speech{top:13%;width:136px;min-height:117px;font-size:14px;padding:14px 14px 26px}.actions button{min-height:56px;padding:9px 16px}.actions button img{height:32px}.small{margin-top:8px}.small button{min-height:36px}#status{bottom:126px}}
-@media(prefers-reduced-motion:reduce){#scene{transition-duration:.25s}.prestart #scene{filter:blur(.5px) brightness(.96)}}
+@media(prefers-reduced-motion:reduce){#scene{transition-duration:.25s}.prestart #scene{filter:blur(.5px) brightness(1)}}
 
 /* Small stepped changes in the drawn strokes, like a hand-drawn animation loop. */
 .ink-filter-defs{position:fixed;top:0;left:0;width:0;height:0;overflow:hidden;pointer-events:none}
