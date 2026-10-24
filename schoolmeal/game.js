@@ -38,7 +38,7 @@ backdrop.material.onBeforeCompile=shader=>{
  shader.fragmentShader=shader.fragmentShader.replace('#include <colorspace_fragment>',`#include <colorspace_fragment>
   vec2 edgePosition=(gl_FragCoord.xy/mealVignetteResolution-0.5)*2.0;
   float edgeShade=smoothstep(0.28,0.95,length(edgePosition))*mealVignetteEnabled;
-  gl_FragColor.rgb*=mix(1.0,0.16,edgeShade);
+  gl_FragColor.rgb*=mix(1.0,0.23,edgeShade);
  `);
 };
 backdrop.material.customProgramCacheKey=()=> 'desktop-background-vignette-v1';
