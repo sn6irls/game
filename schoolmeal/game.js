@@ -45,40 +45,30 @@ backdrop.material.customProgramCacheKey=()=> 'desktop-background-vignette-v1';
 backdrop.position.set(0,.8,-18);backdrop.visible=false;scene.add(backdrop);
 let backdropAspect=1.5,backdropSourceAspect=1.5,defaultBackdrop=true;
 function fitBackdrop(){
- const desktop=window.innerWidth>=900,whole=desktop&&defaultBackdrop;
+ const desktop=window.innerWidth>=900;
  backdropVignette.enabled.value=desktop?1:0;renderer.getDrawingBufferSize(backdropVignette.resolution.value);
- backdropAspect=defaultBackdrop&&!whole?Math.min(backdropSourceAspect,Math.max(9/16,camera.aspect)):backdropSourceAspect;
+ backdropAspect=defaultBackdrop&&!desktop?Math.min(backdropSourceAspect,Math.max(9/16,camera.aspect)):backdropSourceAspect;
  const map=backdrop.material.map;if(map){const visibleWidth=backdropAspect/backdropSourceAspect;map.repeat.set(visibleWidth,1);map.offset.set((1-visibleWidth)/2,0);map.updateMatrix();}
- let reference,origin,point,halfWidth,halfHeight;
- if(whole){
-  // Fit the entire photograph at the resting desktop view, preserving its aspect ratio.
-  reference=new T.PerspectiveCamera(50,camera.aspect,.1,150);reference.filmGauge=36;reference.setFocalLength(150);
-  const distance=7.3/(2*Math.tan(T.MathUtils.degToRad(reference.fov)/2));
-  reference.position.set(0,2.35+Math.sin(.08)*distance,-1.2+Math.cos(.08)*distance);reference.lookAt(0,2.35,-1.2);reference.updateMatrixWorld(true);
-  origin=reference.position;point=new T.Vector3();halfWidth=Math.min(1,backdropSourceAspect/camera.aspect)*.96;halfHeight=Math.min(1,camera.aspect/backdropSourceAspect)*.96;
- }
- for(let i=0;i<backgroundVertices.count;i++){
-  const u=backgroundUV.getX(i),v=backgroundUV.getY(i),side=Math.pow(Math.abs(u-.5)*2,2),foreground=1-T.MathUtils.smoothstep(v,.10,.65),depth=0;
-  if(whole){point.set((u*2-1)*halfWidth,(v*2-1)*halfHeight,.5).unproject(reference).sub(origin);const t=(-18+depth-origin.z)/point.z;point.multiplyScalar(t).add(origin);backgroundVertices.setXYZ(i,point.x,point.y,point.z);}
-  else backgroundVertices.setXYZ(i,u-.5,v-.5,depth);
- }
+ for(let i=0;i<backgroundVertices.count;i++)backgroundVertices.setXYZ(i,backgroundUV.getX(i)-.5,backgroundUV.getY(i)-.5,0);
  backgroundVertices.needsUpdate=true;backgroundGeometry.computeVertexNormals();backgroundGeometry.computeBoundingSphere();
- if(whole){backdrop.position.set(0,0,0);backdrop.scale.set(1,1,1);}
- else{
-  // Cover both intro endpoints with one flat photo, so the camera never reveals its edge.
-  const bounds=new T.Box3(),ref=new T.PerspectiveCamera(50,camera.aspect,.1,150);
-  ref.filmGauge=36;ref.setFocalLength(150);
-  const baseDistance=Math.max(7.3,3.45/camera.aspect)/(2*Math.tan(T.MathUtils.degToRad(ref.fov)/2));
-  for(const [focusY,elevation,zoom] of [[1.95,.24,1.28],[2.35,.08,1]]){
-   const d=baseDistance*zoom;ref.position.set(0,focusY+Math.sin(elevation)*d,-1.2+Math.cos(elevation)*d);ref.lookAt(0,focusY,-1.2);ref.updateMatrixWorld(true);
+ // Cover the intro and playing views with one flat, proportional photograph.
+ // Desktop pointer motion also needs room beyond the resting camera's viewport.
+ const bounds=new T.Box3(),ref=new T.PerspectiveCamera(50,camera.aspect,.1,150);
+ ref.filmGauge=36;ref.setFocalLength(150);
+ const baseDistance=Math.max(7.3,3.45/camera.aspect)/(2*Math.tan(T.MathUtils.degToRad(ref.fov)/2));
+ for(const progress of (desktop?[0,.25,.5,.75,1]:[0,1])){
+  const focusY=T.MathUtils.lerp(1.95,2.35,progress),elevation=T.MathUtils.lerp(.24,.08,progress),d=baseDistance*T.MathUtils.lerp(1.28,1,progress);
+  for(const yaw of (desktop?[-.045,0,.045]:[0]))for(const tilt of (desktop?[-.012,.012]:[0])){
+   const a=yaw*progress,e=elevation+tilt*progress;
+   ref.position.set(Math.sin(a)*d,focusY+Math.sin(e)*d,-1.2+Math.cos(a)*Math.cos(e)*d);ref.lookAt(0,focusY,-1.2);ref.updateMatrixWorld(true);
    for(const sx of [-1,1])for(const sy of [-1,1]){const ray=new T.Vector3(sx,sy,.5).unproject(ref).sub(ref.position);const t=(-18-ref.position.z)/ray.z;bounds.expandByPoint(ray.multiplyScalar(t).add(ref.position));}
   }
-  const size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3()),height=Math.max(size.y,size.x/backdropAspect)*1.06;
-  backdrop.position.set(center.x,center.y,-18);backdrop.scale.set(height*backdropAspect,height,1);
  }
+ const size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3()),height=Math.max(size.y,size.x/backdropAspect)*1.06;
+ backdrop.position.set(center.x,center.y,-18);backdrop.scale.set(height*backdropAspect,height,1);
 }
 let backgroundToken=0,backgroundBusy=false,backgroundMessage='';
-const backgroundText={ko:{button:'배경',title:'배경 바꾸기',choose:'이미지 선택',reset:'기본 배경',close:'닫기',preview:'현재 배경',hint:'PNG·JPG 이미지를 선택하면 바로 적용돼요. 투명한 부분은 어두운 배경으로 보여요.',loading:'배경을 불러오는 중…',applied:'배경을 바꿨어요!',restored:'기본 배경으로 돌아왔어요.',error:'이미지를 열 수 없어요. PNG나 JPG를 다시 선택해 주세요.'},en:{button:'Background',title:'Change background',choose:'Choose image',reset:'Default',close:'Close',preview:'Current background',hint:'Choose a PNG or JPG to apply it immediately. Transparent areas appear dark.',loading:'Loading background…',applied:'Background updated!',restored:'Default background restored.',error:'Could not open this image. Please choose a PNG or JPG.'}};
+const backgroundText={ko:{button:'배경',title:'배경 바꾸기',choose:'배경 변경',reset:'기본 배경',close:'닫기',preview:'현재 배경',hint:'PNG·JPG 이미지를 선택하면 바로 적용돼요. 투명한 부분은 어두운 배경으로 보여요.',loading:'배경을 불러오는 중…',applied:'배경을 바꿨어요!',restored:'기본 배경으로 돌아왔어요.',error:'이미지를 열 수 없어요. PNG나 JPG를 다시 선택해 주세요.'},en:{button:'Background',title:'Change background',choose:'Change background',reset:'Default',close:'Close',preview:'Current background',hint:'Choose a PNG or JPG to apply it immediately. Transparent areas appear dark.',loading:'Loading background…',applied:'Background updated!',restored:'Default background restored.',error:'Could not open this image. Please choose a PNG or JPG.'}};
 function backgroundUI(){const text=backgroundText[lang];artButton('background','bgc hange.png',text.button);$('backgroundTitle').textContent=text.title;$('backgroundChoose').textContent=text.choose;$('backgroundReset').textContent=text.reset;$('backgroundClose').setAttribute('aria-label',text.close);$('backgroundPreview').alt=text.preview;$('backgroundHint').textContent=text.hint;$('backgroundMessage').textContent=backgroundMessage==='error'?text.error:'';$('backgroundChoose').disabled=backgroundBusy;$('backgroundReset').disabled=backgroundBusy;}
 async function changeBackground(source,isDefault=false,announce=true){
  const token=++backgroundToken;backgroundBusy=true;backgroundMessage='';backgroundUI();
