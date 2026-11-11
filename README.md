@@ -8,3 +8,5 @@
 
 
 슈퍼짱 급식주기 SchoolMeal Demo https://sn6irls.github.io/game/schoolmeal/
+
+평범양의 하교버스 Miss Normal’s After-school Bus https://sn6irls.github.io/game/music/
