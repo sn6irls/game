@@ -12,5 +12,5 @@ import './js/beat-engine.js';
 const cleanups=[];
 window.SNG={register:(_,mount)=>mount({root:document.querySelector('#game-root'),onCleanup:fn=>cleanups.push(fn)})};
 addEventListener('pagehide',event=>{if(!event.persisted)cleanups.forEach(fn=>fn());});
-import('./js/games/music.js?v=20261111-audio1').catch(error=>{console.error(error);document.querySelector('#game-root').textContent='게임을 불러오지 못했어요. 새로고침해 주세요.';});
+import('./js/games/music.js?v=20261111-audio2').catch(error=>{console.error(error);document.querySelector('#game-root').textContent='게임을 불러오지 못했어요. 새로고침해 주세요.';});
 </script></head><body><main id="game-root"></main></body></html>

@@ -79,8 +79,8 @@ let recordOverlay=null,recordOverlayCamera=null,recordTexture=null;
 let lastCapture=0;
 function recordFrame(){
  if(!recordContext)return;
- lastCapture=performance.now();
- drawRecordFrame();recordTexture.needsUpdate=true;const clear=renderer.autoClear;renderer.autoClear=false;renderer.render(recordOverlay,recordOverlayCamera);renderer.autoClear=clear;recordStream?.getVideoTracks()[0]?.requestFrame?.();
+ const captureNow=performance.now();
+ drawRecordFrame();recordTexture.needsUpdate=true;const clear=renderer.autoClear;renderer.autoClear=false;renderer.render(recordOverlay,recordOverlayCamera);renderer.autoClear=clear;if(captureNow-lastCapture>=1000/30){lastCapture=captureNow;recordStream?.getVideoTracks()[0]?.requestFrame?.();}
 }
 let recordFile=null,recordFileURL=null;
 const recordDialog=document.createElement('dialog');recordDialog.className='record-result';
@@ -118,7 +118,8 @@ $('.record-button').onclick=async()=>{
   recordOverlay=new THREE.Scene();recordOverlayCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
   const overlay=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:recordTexture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));overlay.position.z=-.5;recordOverlay.add(overlay);
   // Capture the rendered scene itself; the text is composited into this same canvas.
-  recordStream=$('canvas').captureStream(30);
+  const manual=typeof CanvasCaptureMediaStreamTrack!=='undefined'&&'requestFrame' in CanvasCaptureMediaStreamTrack.prototype;
+  recordStream=$('canvas').captureStream(manual?0:30);
   for(const track of recordAudio.stream.getAudioTracks())recordStream.addTrack(track.clone());
   const types=['video/mp4;codecs=avc1.42E01F,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm'];
   const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
