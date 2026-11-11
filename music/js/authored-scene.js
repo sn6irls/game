@@ -4,11 +4,12 @@ import {createAuthoredCharacter} from './authored-character.js';
 
 const smoothNoise=x=>{const i=Math.floor(x),f=x-i,u=f*f*f*(f*(f*6-15)+10);const hash=n=>{const a=Math.sin(n*127.1+311.7)*43758.5453;return (a-Math.floor(a))*2-1;};return hash(i)*(1-u)+hash(i+1)*u;};
 export async function loadAuthoredScene(scene){
- const config=window.MISS_NORMAL_SCENE_CONFIG||await fetch(new URL('assets/bus-scene-config.json',document.baseURI)).then(r=>{if(!r.ok)throw Error('Scene configuration load failed');return r.json();});
  const loader=new GLTFLoader();
- const gltf=window.MISS_NORMAL_SCENE
-  ?await loader.parseAsync(Uint8Array.from(atob(window.MISS_NORMAL_SCENE),c=>c.charCodeAt(0)).buffer,'')
-  :await loader.loadAsync(new URL('assets/after-school-bus.glb',document.baseURI).href);
+ const configRequest=window.MISS_NORMAL_SCENE_CONFIG||fetch(new URL('assets/bus-scene-config.json',document.baseURI)).then(r=>{if(!r.ok)throw Error('Scene configuration load failed');return r.json();});
+ const sceneRequest=window.MISS_NORMAL_SCENE
+  ?loader.parseAsync(Uint8Array.from(atob(window.MISS_NORMAL_SCENE),c=>c.charCodeAt(0)).buffer,'')
+  :loader.loadAsync(new URL('assets/after-school-bus.glb?v=20261111-fast',document.baseURI).href);
+ const [config,gltf]=await Promise.all([configRequest,sceneRequest]);
  const root=gltf.scene;scene.add(root);root.updateMatrixWorld(true);
  const byRole={};
  root.traverse(o=>{

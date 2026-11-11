@@ -83,15 +83,10 @@ function recordFrame(){
 }
 let recordFile=null,recordFileURL=null;
 const recordDialog=document.createElement('dialog');recordDialog.className='record-result';
-recordDialog.innerHTML='<button class="record-close" aria-label="닫기">×</button><p class="record-message" role="status">녹화 완료</p><video controls playsinline preload="metadata"></video><div class="record-actions"><button class="record-share">저장 / 공유</button><a class="record-download">파일 저장</a></div>';
+recordDialog.innerHTML='<button class="record-close" aria-label="닫기">×</button><p class="record-message" role="status"></p><video controls playsinline preload="metadata"></video><div class="record-actions"><a class="record-download">SAVE</a></div>';
 document.body.append(recordDialog);recordDialog.addEventListener('click',clickFeedback,true);
 recordDialog.querySelector('.record-close').onclick=()=>recordDialog.close();
 recordDialog.addEventListener('close',()=>recordDialog.querySelector('video').pause());
-recordDialog.querySelector('.record-share').onclick=async()=>{
- if(!recordFile)return;
- try{await navigator.share({files:[recordFile],title:'평범양의 하교버스'});}
- catch(error){if(error.name!=='AbortError')recordDialog.querySelector('.record-message').textContent='공유할 수 없어요. 파일 저장을 눌러주세요.';}
-};
 function finishRecording(){
  recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;recordContext=null;recordCanvas?.remove();recordCanvas=null;recorder=null;recordBusy=false;
  const b=$('.record-button');b.setAttribute('aria-pressed','false');b.setAttribute('aria-label','녹화 시작');b.title='녹화 시작';$('.studio').classList.remove('is-recording');
@@ -102,9 +97,8 @@ function showRecording(blob,poster){
  recordFile=new File([blob],'평범양의 하교버스-'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.'+ext,{type:blob.type.split(';')[0]});
  recordFileURL=URL.createObjectURL(recordFile);
  const link=recordDialog.querySelector('.record-download');link.href=recordFileURL;link.download=recordFile.name;
- const share=recordDialog.querySelector('.record-share');share.hidden=!(navigator.canShare&&navigator.canShare({files:[recordFile]}));
  const video=recordDialog.querySelector('video');video.src=recordFileURL;if(poster)video.poster=poster;
- recordDialog.querySelector('.record-message').textContent='녹화 완료 · 저장해주세요';
+ recordDialog.querySelector('.record-message').textContent='';
  if(!disposed)recordDialog.showModal();
 }
 function stopRecording(){if(recorder?.state==='recording'){recordBusy=true;recorder.stop();}}

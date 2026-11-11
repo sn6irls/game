@@ -3,12 +3,15 @@
 <link rel="stylesheet" href="./css/music.css">
 <link rel="stylesheet" href="./css/harmony.css">
 <link rel="stylesheet" href="./css/visual-novel.css">
-<link rel="stylesheet" href="./css/mp3-device.css?v=20261111-7">
-<script type="importmap">{"imports":{"three":"./js/vendor/three.module.js"}}</script>
+<link rel="stylesheet" href="./css/mp3-device.css?v=20261111-8">
+<link rel="preload" href="./assets/after-school-bus.glb?v=20261111-fast" as="fetch" crossorigin fetchpriority="high">
+<link rel="preload" href="./assets/bus-scene-config.json" as="fetch" crossorigin>
+<link rel="modulepreload" href="./js/games/music.js?v=20261111-8">
+<script type="importmap">{"imports":{"three":"./js/vendor/three.module.js","./js/authored-scene.js":"./js/authored-scene.js?v=20261111-fast"}}</script>
 <script type="module">
 import './js/beat-engine.js';
 const cleanups=[];
 window.SNG={register:(_,mount)=>mount({root:document.querySelector('#game-root'),onCleanup:fn=>cleanups.push(fn)})};
 addEventListener('pagehide',event=>{if(!event.persisted)cleanups.forEach(fn=>fn());});
-import('./js/games/music.js?v=20261111-3').catch(error=>{console.error(error);document.querySelector('#game-root').textContent='게임을 불러오지 못했어요. 새로고침해 주세요.';});
+import('./js/games/music.js?v=20261111-8').catch(error=>{console.error(error);document.querySelector('#game-root').textContent='게임을 불러오지 못했어요. 새로고침해 주세요.';});
 </script></head><body><main id="game-root"></main></body></html>
