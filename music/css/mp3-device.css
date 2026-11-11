@@ -133,3 +133,5 @@ body,.studio,.studio *,dialog,dialog *{cursor:var(--pixel-cursor)!important}
 .beat-grid .track-name i,.beat-grid .track-name svg{width:12px;height:14px}
 .beat-grid .step[aria-pressed=true]{background:#3f5a28;border-color:#324b1e;box-shadow:none}
 .beat-grid .step.now[aria-pressed=true]{background:#fffef3;border-color:#fff;box-shadow:none;filter:none}
+/* Keep the surround black and lift the LCD image gently. */
+html,body{background:#000!important} .mp3-screen .stage canvas{filter:brightness(1.13)}
