@@ -137,3 +137,5 @@ html,body{background:#171717!important} .mp3-screen .stage canvas{filter:none}
 
 /* Minimal recording playback and a single save action. */
 .record-result{padding:38px 14px 14px;background:#090b09;color:#d9dfcf;border:1px solid #343b30;border-radius:5px;box-shadow:0 18px 70px #000b;color-scheme:dark}.record-result::backdrop{background:#000b}.record-result video{border-radius:2px;background:#000}.record-message:empty{display:none}.record-message{font-size:12px;color:#b8c0ae}.record-close{top:2px;right:5px;color:#b8c0ae;font-size:22px}.record-actions{margin-top:12px}.record-actions .record-download{padding:13px;border:1px solid #4e5d3c;border-radius:2px;background:#182013;color:#dfebc9;font:600 12px/1.3 monospace;letter-spacing:2px}.record-actions .record-download:hover{background:#26331c}
+/* Recording includes this text in the captured WebGL frame. */
+.studio.is-recording .vn-text{visibility:hidden}

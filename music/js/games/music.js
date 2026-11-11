@@ -73,13 +73,14 @@ function updateImpact(){updateDialogue(audibleTime());impactStars?.update(perfor
 let renderer,scene,camera,model,keyLight,fill,rim,ambient,accent,eyes=[],propTemplates=[];
 let kickCount=0,lastKick=null,nodSerial=0;
 let recordAudio,recorder=null,recordCanvas=null,recordContext=null,recordStream=null,recordChunks=[],recordBusy=false;
-function drawRecordFrame(){if(!recordContext)return;const c=recordContext,w=recordCanvas.width,h=recordCanvas.height,stage=$('.stage'),sx=w/stage.clientWidth,sy=h/stage.clientHeight;c.fillStyle='#080d08';c.fillRect(0,0,w,h);c.drawImage($('canvas'),0,0,w,h);
+function drawRecordFrame(){if(!recordContext)return;const c=recordContext,w=recordCanvas.width,h=recordCanvas.height,stage=$('.stage'),sx=w/stage.clientWidth,sy=h/stage.clientHeight;c.clearRect(0,0,w,h);
  if($('.vn-text').classList.contains('visible')){const exit=Math.max(0,Math.min(1,(audibleTime()-dialogueStartedAt-3)/.65));c.save();c.globalAlpha=1-exit;c.translate(0,-28*exit*sy);for(const [j,line] of [lyricPrevious,lyricCurrent].entries()){c.fillStyle=j?'#fffdf2':'#98aaa0';[...line].forEach((ch,i)=>lyricPixels[ch].forEach((row,y)=>[...row].forEach((bit,x)=>{if(bit==='1')c.fillRect(((w/sx-line.length*22)/2+i*22+x*1.7)*sx,(10+j*25+y*1.7)*sy,1.7*sx,1.7*sy);})));}c.restore();} }
+let recordOverlay=null,recordOverlayCamera=null,recordTexture=null;
 let lastCapture=0;
 function recordFrame(){
  if(!recordContext)return;
- const now=performance.now();if(now-lastCapture<1000/30-1)return;lastCapture=now;
- drawRecordFrame();const track=recordStream?.getVideoTracks()[0];track?.requestFrame?.();
+ lastCapture=performance.now();
+ drawRecordFrame();recordTexture.needsUpdate=true;const clear=renderer.autoClear;renderer.autoClear=false;renderer.render(recordOverlay,recordOverlayCamera);renderer.autoClear=clear;recordStream?.getVideoTracks()[0]?.requestFrame?.();
 }
 let recordFile=null,recordFileURL=null;
 const recordDialog=document.createElement('dialog');recordDialog.className='record-result';
@@ -88,6 +89,7 @@ document.body.append(recordDialog);recordDialog.addEventListener('click',clickFe
 recordDialog.querySelector('.record-close').onclick=()=>recordDialog.close();
 recordDialog.addEventListener('close',()=>recordDialog.querySelector('video').pause());
 function finishRecording(){
+ if(recordOverlay){for(const child of recordOverlay.children){child.geometry.dispose();child.material.dispose();}recordTexture.dispose();recordOverlay=null;recordOverlayCamera=null;recordTexture=null;}
  recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;recordContext=null;recordCanvas?.remove();recordCanvas=null;recorder=null;recordBusy=false;
  const b=$('.record-button');b.setAttribute('aria-pressed','false');b.setAttribute('aria-label','녹화 시작');b.title='녹화 시작';$('.studio').classList.remove('is-recording');
 }
@@ -111,19 +113,21 @@ $('.record-button').onclick=async()=>{
   if(!playing||!renderer)throw Error('재생 화면이 준비된 뒤 다시 눌러주세요.');
   recordChunks=[];recordCanvas=document.createElement('canvas');recordCanvas.width=720;
   recordCanvas.height=Math.round(720*$('.stage').clientHeight/$('.stage').clientWidth/2)*2;
-  recordCanvas.setAttribute('aria-hidden','true');recordCanvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:20';$('.stage').append(recordCanvas);
-  recordContext=recordCanvas.getContext('2d');lastCapture=0;recordFrame();
-  const manual=typeof CanvasCaptureMediaStreamTrack!=='undefined'&&'requestFrame' in CanvasCaptureMediaStreamTrack.prototype;
-  recordStream=recordCanvas.captureStream(manual?0:30);
+  recordContext=recordCanvas.getContext('2d');
+  recordTexture=new THREE.CanvasTexture(recordCanvas);recordTexture.colorSpace=THREE.SRGBColorSpace;
+  recordOverlay=new THREE.Scene();recordOverlayCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const overlay=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:recordTexture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));overlay.position.z=-.5;recordOverlay.add(overlay);
+  // Capture the rendered scene itself; the text is composited into this same canvas.
+  recordStream=$('canvas').captureStream(30);
   for(const track of recordAudio.stream.getAudioTracks())recordStream.addTrack(track.clone());
-  const types=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm'];
+  const types=['video/mp4;codecs=avc1.42E01F,mp4a.40.2','video/mp4','video/webm;codecs=vp8,opus','video/webm'];
   const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
   recorder=new MediaRecorder(recordStream,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:2600000,audioBitsPerSecond:128000});
   const current=recorder;let failure=false;
   current.ondataavailable=e=>{if(e.data.size)recordChunks.push(e.data);};
   current.onerror=e=>{failure=true;recordDialog.querySelector('.record-message').textContent='녹화 중 오류가 발생했어요. 다시 시도해주세요.';$('#status').textContent=e.error?.message||'녹화 오류';};
   current.onstop=()=>{
-   const type=current.mimeType||recordChunks[0]?.type||'video/webm',blob=new Blob(recordChunks,{type}),poster=recordCanvas?.toDataURL('image/jpeg',.82);finishRecording();if(playing)stop();
+   const type=current.mimeType||recordChunks[0]?.type||'video/webm',blob=new Blob(recordChunks,{type}),poster=null;finishRecording();if(playing)stop();
    if(blob.size>1024&&!failure)showRecording(blob,poster);
    else{recordDialog.querySelector('video').removeAttribute('src');recordDialog.querySelector('.record-message').textContent='녹화 파일을 만들지 못했어요. 다시 시도해주세요.';recordDialog.querySelector('.record-actions').hidden=true;if(!disposed)recordDialog.showModal();}
   };
@@ -171,7 +175,7 @@ cells.forEach(b=>b.addEventListener('click',e=>{if(e.detail!==0)return;remember(
 function undo(){if(!history.length)return;pattern=history.pop();syncPending();paint();save();}
 $('#clear').onclick=()=>{remember();pattern.forEach(r=>r.fill(false));syncPending();paint();save();};
 $('#generate').onclick=()=>{remember();const old=JSON.stringify(pattern);for(let i=0;i<4;i++){pattern=Engine.generate();if(JSON.stringify(pattern)!==old)break;}syncPending();paint();save();};
-function initAudio(){ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});uiBus=ac.createGain();uiBus.gain.value=.45;uiBus.connect(ac.destination);master=ac.createGain();master.gain.value=.48;const comp=ac.createDynamicsCompressor();comp.threshold.value=-12;comp.ratio.value=5;master.connect(comp);comp.connect(ac.destination);recordAudio=ac.createMediaStreamDestination();comp.connect(recordAudio);room=ac.createConvolver();const ir=ac.createBuffer(2,ac.sampleRate*.8,ac.sampleRate);for(let c=0;c<2;c++){const data=ir.getChannelData(c);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3)*.30;}room.buffer=ir;const wet=ac.createGain();wet.gain.value=.18;room.connect(wet);wet.connect(master);noiseBuffer=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=noiseBuffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+function initAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch{}ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});ac.addEventListener('statechange',()=>{if(playing&&ac.state!=='running')stop();});uiBus=ac.createGain();uiBus.gain.value=.45;uiBus.connect(ac.destination);master=ac.createGain();master.gain.value=.48;const comp=ac.createDynamicsCompressor();comp.threshold.value=-12;comp.ratio.value=5;master.connect(comp);comp.connect(ac.destination);recordAudio=ac.createMediaStreamDestination();comp.connect(recordAudio);room=ac.createConvolver();const ir=ac.createBuffer(2,ac.sampleRate*.8,ac.sampleRate);for(let c=0;c<2;c++){const data=ir.getChannelData(c);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3)*.30;}room.buffer=ir;const wet=ac.createGain();wet.gain.value=.18;room.connect(wet);wet.connect(master);noiseBuffer=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=noiseBuffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
 function sound(row,at,column=0){
  if(!samples)throw Error('음원을 불러오는 중이에요.');
  const voice=playOneShot(ac,master,samples,row,at,column,bpm,()=>activeSampleVoices.delete(voice));
@@ -188,7 +192,10 @@ function syncHarmony(){if(!ac)return;if(!harmony.enabled){for(const v of harmony
 async function auditionHarmony(pitches){try{if(!ac)initAudio();await ac.resume();if(disposed)return;master.gain.setTargetAtTime(.48,ac.currentTime,.015);for(const pitch of pitches)harmonySound({pitch,gain:.72},ac.currentTime+.02,.32);}catch{}}
 function audibleTime(){if(!ac)return 0;if(ac.getOutputTimestamp){const stamp=ac.getOutputTimestamp();if(stamp.contextTime>0)return Math.min(ac.currentTime,stamp.contextTime+Math.max(0,performance.now()-stamp.performanceTime)/1000);}return Math.max(0,ac.currentTime-(ac.baseLatency||0));}
 function newEvent(at,column,row=null){const e={at,step:column,id:serial++,voices:Array(5).fill(null),fired:false,prop:null};for(let r=0;r<5;r++)if(row===null?pattern[r][column]:r===row)e.voices[r]=sound(r,at,column);if(e.voices[4])e.dropKind=dropSerial++%3;e.harmony=row===null?harmony.at(column).map(n=>harmonySound(n,at,n.length*60/bpm/4)):[];return e;}
-function schedule(){if(!playing)return;while(next<ac.currentTime+Engine.DROP_LEAD+.08){events.push(newEvent(next,step));next+=60/bpm/4;step=(step+1)%STEPS;}}
+function schedule(){if(!playing||ac.state!=='running')return;
+ const interval=60/bpm/4,deadline=ac.currentTime+.008;
+ if(next<deadline){const missed=Math.ceil((deadline-next)/interval);next+=missed*interval;step=(step+missed)%STEPS;}
+ while(next<ac.currentTime+Engine.DROP_LEAD+.08){events.push(newEvent(next,step));next+=60/bpm/4;step=(step+1)%STEPS;}}
 function removeProp(e){if(e.prop){scene?.remove(e.prop);e.prop=null;}}
 function stop(){stopRecording();transportStartedAt=Infinity;playhead.hidden=true;for(const v of activeSampleVoices)cancelVoice(v);activeSampleVoices.clear();dialogueNode=null;dialogueIndex=0;dialogueStartedAt=-Infinity;$('.vn-text').replaceChildren();$('.vn-text').classList.remove('visible','lyric-exit');playing=false;starting=false;clearInterval(timer);for(const e of [...events,...previews]){e.voices.forEach(cancelVoice);removeProp(e);}for(const v of harmonyVoices)cancelVoice(v);harmonyVoices.clear();harmony.cursor(-1);events=[];previews=[];hits=[];lastFlash=0;lastKick=null;kickCount=0;step=0;if(master)master.gain.setTargetAtTime(0,ac.currentTime,.015);cells.forEach(b=>b.classList.remove('now','sounding'));numbers.forEach(b=>b.classList.remove('active'));$('.play').innerHTML=icons.play;$('.play').setAttribute('aria-label','재생');$('#status').textContent='READY WHEN YOU ARE';$('.stage-counter').textContent='01 / 16';$('.stage').classList.remove('playing','bonk');$('.studio').classList.remove('is-playing');}
 async function toggle(){if(playing){stop();return;}if(starting)return;starting=true;try{if(!ac)initAudio();await ac.resume();await ensureSamples();master.gain.setTargetAtTime(.48,ac.currentTime,.015);if(disposed||!starting)return;playing=true;starting=false;next=ac.currentTime+Engine.DROP_LEAD+.04;transportStartedAt=next;$('.play').innerHTML=icons.pause;$('.play').setAttribute('aria-label','정지');$('#status').textContent='ON THE BEAT';$('.stage').classList.add('playing');$('.studio').classList.add('is-playing');schedule();timer=setInterval(schedule,20);}catch(error){starting=false;$('#status').textContent='음원을 불러오지 못했어요. 다시 눌러주세요.';console.error(error);}}
