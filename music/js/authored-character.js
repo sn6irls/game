@@ -104,23 +104,24 @@ export function createAuthoredCharacter(root,windowPlane){
   const breathing=Math.sin(t*1.12)+Math.sin(t*.37)*.08,breathLag=Math.sin(t*1.12-.18);
   const ages=response.impactAges||[age],pulse=points=>Math.max(0,...ages.map(a=>envelope(a,points)))*amount;
   // Glass contact coincides with the beat. The neck, shoulder and hand recover in sequence.
-  const signed=(offset=0)=>{const values=ages.map(a=>MissNormalBeat.snap(a-offset,true)),peak=Math.max(0,...values);return (peak>0?peak:Math.min(0,...values))*amount;};
+  const signed=(offset=0)=>MissNormalBeat.impactMotion(ages,offset)*amount;
   const hitSigned=signed(),hit=Math.max(0,hitSigned),neckHit=signed(.020)*.66;
-  const shrug=pulse([[-.10,0],[-.035,.30],[.010,1],[.10,.72],[.24,.23],[.36,0]]);
-  const release=pulse([[-.14,0],[-.070,.45],[-.020,.93],[.025,1],[.10,.84],[.23,.30],[.37,0]]);
+  const shrug=pulse([[-.08,0],[-.018,.16],[.025,1],[.08,.72],[.16,.12],[.24,.02],[.30,.18],[.46,0]]);
+  const flinch=pulse([[-.025,0],[.040,1],[.12,.60],[.23,.10],[.34,.09],[.48,0]]);
+  const release=pulse([[-.14,0],[-.070,.45],[-.020,.93],[.055,1],[.17,.94],[.27,.55],[.41,.10],[.52,0]]);
   const ride=response.ride||{},bodyHeave=THREE.MathUtils.clamp(ride.heave||0,-.004,.004);
   const roadNeck=THREE.MathUtils.clamp(ride.compression||0,-.012,.012);
   const nod=nodResponse.pitch*.72*amount*(1-hit*.90),side=nodResponse.roll*.65*amount*(1-hit),turn=nodResponse.yaw*.65*amount*(1-hit);
-  rotate('Pelvis');rotate('Spine',breathing*.0025,0,-neckHit*.0015);
-  rotate('Chest',breathLag*.005+nod*nodAxis.x*.08+roadNeck*.15,0,-neckHit*.005+nod*nodAxis.z*.08+side*.025);
-  move('Chest',0,breathing*.0012+bodyHeave,breathing*.0007);
+  rotate('Pelvis');rotate('Spine',breathing*.0025+flinch*nodAxis.x*.010,0,flinch*nodAxis.z*.010-neckHit*.0015);
+  rotate('Chest',breathLag*.005+nod*nodAxis.x*.08+roadNeck*.15+flinch*nodAxis.x*.035,flinch*.007,-neckHit*.005+nod*nodAxis.z*.08+side*.025+flinch*nodAxis.z*.035);
+  move('Chest',0,breathing*.0012+bodyHeave-flinch*.003,breathing*.0007+flinch*.004);
   rotate('Neck',nod*nodAxis.x*.28+neckHit*impactAxis.x*.085+roadNeck*.25,turn*.20,nod*nodAxis.z*.28+neckHit*impactAxis.z*.085-side*.15);
   move('Neck',0,-Math.max(0,nod)*.018-hit*.0025,0);
   const headPitch=nod*nodAxis.x+hitSigned*impactAxis.x*.55+roadNeck,headYaw=turn+hitSigned*.008,headRoll=nod*nodAxis.z+hitSigned*impactAxis.z*.55-side;
   rotate('Head',headPitch,headYaw,headRoll);
-  const rise=shrug*.018+Math.max(0,nod)*.018+breathLag*.0009;
-  move('Clavicle_Chin',0,rise,0);move('Clavicle_Support',0,rise*.75,0);
-  rotate('Clavicle_Chin',0,0,-shrug*.021);rotate('Clavicle_Support',0,0,shrug*.017);
+  const rise=shrug*.026+Math.max(0,nod)*.018+breathLag*.0009;
+  move('Clavicle_Chin',0,rise,flinch*.007);move('Clavicle_Support',0,rise*.82,flinch*.005);
+  rotate('Clavicle_Chin',flinch*.025,0,-shrug*.042);rotate('Clavicle_Support',flinch*.019,0,shrug*.034);
   root.updateMatrixWorld(true);
   // Stop skull rotation at the glass. Never drag the whole body or teleport its neck.
   if(rightEdge()>-.003){let low=0,high=1;for(let i=0;i<10;i++){const mid=(low+high)*.5;rotate('Head',headPitch*mid,headYaw*mid,headRoll*mid);root.updateMatrixWorld(true);if(rightEdge()>-.003)high=mid;else low=mid;}rotate('Head',headPitch*low,headYaw*low,headRoll*low);}
@@ -155,7 +156,7 @@ export function createAuthoredCharacter(root,windowPlane){
   rotate('Hair_Front_R',headPitch*.95,headYaw*.95,headRoll*.94);
   rotate('Hair_Front_R_Tip',nod*.80-lagHit*.075,turn*.80,-lagHit*.32-side*.82);
   root.updateMatrixWorld(true);keepHairOutside();
-  handDiagnostics.windowGap=-rightEdge();handDiagnostics.impact=hit;handDiagnostics.headImpulse=hitSigned;handDiagnostics.release=release;
+  handDiagnostics.windowGap=-rightEdge();handDiagnostics.impact=hit;handDiagnostics.headImpulse=hitSigned;handDiagnostics.release=release;handDiagnostics.shoulder=shrug;handDiagnostics.flinch=flinch;
   const phase=t%4.7;blink(ages.some(a=>a>=-.010&&a<.17)||(!ages.some(a=>a<.7&&a>-.2)&&phase>4.54&&phase<4.67));
  }};
 }

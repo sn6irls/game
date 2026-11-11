@@ -92,10 +92,10 @@ export async function loadAuthoredScene(scene){
  const ray=new THREE.Raycaster(),probe=new THREE.Vector2(.35,.1);
  // Front and rear axles drive one sprung cabin. The passenger's pelvis and camera
  // share that rigid transform; only their compliant joints lag behind it.
- const suspension={front:0,fv:0,rear:0,rv:0,roll:0,rollV:0},cameraLag={y:0,v:0},bodyLag={y:0,v:0};
+ const suspension={front:0,fv:0,rear:0,rv:0,roll:0,rollV:0},cameraLag={y:0,v:0,x:0,xv:0,z:0,zv:0},bodyLag={y:0,v:0};
  // The cabin jolts first; a camera held in two hands catches up and settles.
  // Independent damped joints preserve continuity even on consecutive impacts.
- const cameraMount={pitch:0,pv:0,roll:0,rv:0};
+ const cameraMount={pitch:0,pv:0,roll:0,rv:0,yaw:0,yv:0};
  const cabinBind=cabin.matrix.clone(),rigBind=rig.matrix.clone(),pivot=new THREE.Vector3(3.35,1.15,.10);
  const travelMatrix=new THREE.Matrix4(),pivotMatrix=new THREE.Matrix4().makeTranslation(pivot.x,pivot.y,pivot.z),unpivot=new THREE.Matrix4().makeTranslation(-pivot.x,-pivot.y,-pivot.z),vehicleQ=new THREE.Quaternion(),vehicleEuler=new THREE.Euler();
  const poseMatrix=new THREE.Matrix4(),rigOffset=new THREE.Matrix4().makeTranslation(-.055,0,.020);
@@ -119,21 +119,33 @@ export async function loadAuthoredScene(scene){
     const jointHeight=.012+(smoothNoise(roadIndex*6.7)+1)*.004;
     const frontJoint=Math.exp(-(((clock-jointAt)/.045)**2))*jointHeight;
     const rearJoint=Math.exp(-(((clock-jointAt-.19)/.055)**2))*jointHeight*.82;
-    let frontBump=0,rearBump=0,rollBump=0,contactPulse=0;
-    for(const age of ages){const a=age+offset;frontBump+=Math.exp(-(((a+.080)/.035)**2))-.30*Math.exp(-(((a-.015)/.055)**2));rearBump+=Math.exp(-(((a-.095)/.040)**2))-.24*Math.exp(-(((a-.190)/.065)**2));rollBump+=Math.exp(-(((a+.020)/.065)**2));if(a>=0&&a<.065)contactPulse+=Math.exp(-(((a-.012)/.018)**2));}
-    const contact=Math.min(1.4,contactPulse)*amount;
+    let frontBump=0,rearBump=0,rollBump=0,contactPulse=0,sidePulse=0;
+    for(const age of ages){
+     const a=age+offset,eventAt=now-age,side=Math.sin(eventAt*12.9898+4.1)>=0?1:-1;
+     frontBump+=Math.exp(-(((a+.080)/.035)**2))-.30*Math.exp(-(((a-.015)/.055)**2));
+     rearBump+=Math.exp(-(((a-.095)/.040)**2))-.24*Math.exp(-(((a-.190)/.065)**2));
+     rollBump+=side*Math.exp(-(((a+.020)/.065)**2));
+     if(a>=0&&a<.065){const pulse=Math.exp(-(((a-.012)/.018)**2));contactPulse+=pulse;sidePulse+=side*pulse;}
+    }
+    const contact=Math.min(1.4,contactPulse)*amount,sideContact=THREE.MathUtils.clamp(sidePulse,-1.4,1.4)*amount;
     const frontTarget=(asphalt+frontJoint+THREE.MathUtils.clamp(frontBump,-.5,1.5)*.070)*amount;
     const rearTarget=(smoothNoise((clock-.19)*2.2)*.0026+rearJoint+THREE.MathUtils.clamp(rearBump,-.4,1.5)*.056)*amount;
     const fa=(frontTarget-suspension.front)*169-suspension.fv*15.5;
     const ra=(rearTarget-suspension.rear)*144-suspension.rv*15;
     suspension.fv+=fa*h;suspension.front+=suspension.fv*h;
     suspension.rv+=ra*h;suspension.rear+=suspension.rv*h;
-    const rollTarget=(smoothNoise(clock*.72+40)*.00045-Math.min(1.5,rollBump)*.0048)*amount;
-    suspension.rollV+=((rollTarget-suspension.roll)*144-suspension.rollV*19)*h;suspension.roll+=suspension.rollV*h;
+    const rollTarget=(smoothNoise(clock*.72+40)*.00065+THREE.MathUtils.clamp(rollBump,-1.5,1.5)*.010)*amount;
+    const rollAcceleration=(rollTarget-suspension.roll)*144-suspension.rollV*16;
+    suspension.rollV+=rollAcceleration*h;suspension.roll+=suspension.rollV*h;
     const acceleration=fa*.40+ra*.60;
     cameraLag.v+=(-cameraLag.y*160-cameraLag.v*18-acceleration*.95-contact*13)*h;cameraLag.y+=cameraLag.v*h;
     cameraMount.pv+=(-cameraMount.pitch*400-cameraMount.pv*26+acceleration*.035+contact*3.6)*h;cameraMount.pitch+=cameraMount.pv*h;
-    cameraMount.rv+=(-cameraMount.roll*320-cameraMount.rv*24-contact*.42)*h;cameraMount.roll+=cameraMount.rv*h;
+    // Different spring rates and the delayed rear axle make one road impulse
+    // rock the cabin, then pitch and settle the hand-held camera in an arc.
+    cameraMount.rv+=(-cameraMount.roll*289-cameraMount.rv*20-rollAcceleration*.55+sideContact*.80)*h;cameraMount.roll+=cameraMount.rv*h;
+    cameraMount.yv+=(-cameraMount.yaw*225-cameraMount.yv*20-suspension.rollV*.45-sideContact*1.35)*h;cameraMount.yaw+=cameraMount.yv*h;
+    cameraLag.xv+=(-cameraLag.x*144-cameraLag.xv*18-rollAcceleration*.14+sideContact*2.6)*h;cameraLag.x+=cameraLag.xv*h;
+    cameraLag.zv+=(-cameraLag.z*121-cameraLag.zv*16+(fa-ra)*.28-contact*9)*h;cameraLag.z+=cameraLag.zv*h;
     bodyLag.v+=(-bodyLag.y*420-bodyLag.v*34-acceleration*.24)*h;bodyLag.y+=bodyLag.v*h;
    }
    const heave=suspension.front*.40+suspension.rear*.60,pitch=(suspension.front-suspension.rear)/3.8,roll=suspension.roll;
@@ -147,8 +159,9 @@ export async function loadAuthoredScene(scene){
    character.update(t,motion,amount,response,boomAge>=0&&boomAge<.065?boomAge:Math.min(boomAge,roadImpactAge));
    camera.position.copy(cameraRest).applyMatrix4(travelMatrix);
    camera.position.y+=.035*Math.tanh(cameraLag.y/.035)+smoothNoise(t*.67+5)*.00065*amount;
-   camera.position.x+=smoothNoise(t*.53+70)*.00055*amount;
-   cameraTilt.setFromEuler(cameraEuler.set(smoothNoise(t*.6+13)*.00032*amount-pitch*.3+cameraMount.pitch,-smoothNoise(t*.47+29)*.00028*amount,smoothNoise(t*.41+31)*.00045*amount-roll*.35+cameraMount.roll));
+   camera.position.x+=.018*Math.tanh(cameraLag.x/.018)+smoothNoise(t*.53+70)*.00055*amount;
+   camera.position.z+=.040*Math.tanh(cameraLag.z/.040);
+   cameraTilt.setFromEuler(cameraEuler.set(smoothNoise(t*.6+13)*.00032*amount-pitch*.3+.009*Math.tanh(cameraMount.pitch/.009),-smoothNoise(t*.47+29)*.00028*amount+.0045*Math.tanh(cameraMount.yaw/.0045),smoothNoise(t*.41+31)*.00045*amount-roll*.35+.008*Math.tanh(cameraMount.roll/.008)));
    camera.quaternion.copy(vehicleQ).multiply(cameraQ).multiply(cameraTilt);camera.updateMatrixWorld(true);
    if(kickId!==lastKickId&&kickId>=0){kickSerial++;lastKickId=kickId;}
    const kick=Math.min(1,response.kick),dark=1-kick*.94;
@@ -171,7 +184,7 @@ export async function loadAuthoredScene(scene){
    const seam=THREE.MathUtils.smoothstep(x,0,.08)*(1-THREE.MathUtils.smoothstep(x,.92,1));
    let lamp=0,nearest=0;for(const [offset,weight]of [[0,seam],[.5,1-seam]])for(const pos of [.23,.704]){const d=((u+offset-pos+.5)%1+1)%1-.5;const strength=Math.exp(-Math.pow(d/.04,2))*weight;if(strength>lamp){lamp=strength;nearest=d;}}
    passingLight.position.set(4.15,2.65,.2+nearest*30);passingLight.intensity=3.8*lamp;
-   Object.assign(diagnostics,{scroll,lamp,haze:haze.value,flash:flash.value,boltOrigin:boltOrigin.value.toArray(),boltScale:boltScale.value.toArray(),road:heave,roll,pitch,cameraLag:cameraLag.y,cameraPitch:cameraMount.pitch,cameraRoll:cameraMount.roll,bodyLag:bodyLag.y,stopGlow:glow,kickDirection:Math.max(0,kickSerial)%6});
+   Object.assign(diagnostics,{scroll,lamp,haze:haze.value,flash:flash.value,boltOrigin:boltOrigin.value.toArray(),boltScale:boltScale.value.toArray(),road:heave,roll,pitch,cameraLag:cameraLag.y,cameraPitch:cameraMount.pitch,cameraRoll:cameraMount.roll,cameraYaw:cameraMount.yaw,cameraX:cameraLag.x,cameraZ:cameraLag.z,bodyLag:bodyLag.y,stopGlow:glow,kickDirection:Math.max(0,kickSerial)%6});
   },
   dispose(){stopMask.dispose();material.map.dispose();mountainHorizon.dispose();character.dispose();}
  };
