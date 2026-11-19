@@ -85,17 +85,12 @@ const headRest={pitch:-.055,yaw:.11};neck.rotation.set(headRest.pitch,headRest.y
 const knobPivot=new THREE.Group();new THREE.Box3().setFromObject(knob).getCenter(knobPivot.position);scene.add(knobPivot);knobPivot.attach(knob);
 const knobAxis=new THREE.Vector3(-.766,0,.643).normalize(),hatchRight=new THREE.Vector3(.643,0,.766).normalize();
 const hatchBox=new THREE.Box3().setFromObject(hatch),hatchCenter=hatchBox.getCenter(new THREE.Vector3());
-// Cover the baked scan behind the opened door with a fitted, unlit black recess.
-hatch.updateWorldMatrix(true,true);
-const hatchInside=hatch.clone(true);hatch.matrixWorld.decompose(hatchInside.position,hatchInside.quaternion,hatchInside.scale);
-hatchInside.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshBasicMaterial({color:0x030303,side:THREE.DoubleSide,toneMapped:false});o.castShadow=false;}});
-scene.add(hatchInside);hatchInside.position.addScaledVector(knobAxis,.002);hatchInside.visible=false;
+// Keep the authored door texture on both sides, without an added black insert.
 const hinge=new THREE.Group();hinge.position.copy(hatchCenter);hinge.position.y=hatchBox.max.y;scene.add(hinge);hinge.attach(hatch);
 hatch.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;const lift=m=>{const copy=m.clone();copy.polygonOffset=true;copy.polygonOffsetFactor=-1;copy.polygonOffsetUnits=-1;
- copy.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nif (!gl_FrontFacing) diffuseColor.rgb = vec3(0.006);');};copy.customProgramCacheKey=()=> 'black-hatch-interior-v1';
  return copy;};o.material=Array.isArray(o.material)?o.material.map(lift):lift(o.material);}});
 const hatchRest={position:hatch.position.clone(),quaternion:hatch.quaternion.clone(),scale:hatch.scale.clone()};
-function closeHatch(){hinge.quaternion.identity();hatch.position.copy(hatchRest.position);hatch.quaternion.copy(hatchRest.quaternion);hatch.scale.copy(hatchRest.scale);hatch.visible=true;hatchInside.visible=false;hatch.updateWorldMatrix(true,true);}
+function closeHatch(){hinge.quaternion.identity();hatch.position.copy(hatchRest.position);hatch.quaternion.copy(hatchRest.quaternion);hatch.scale.copy(hatchRest.scale);hatch.visible=true;hatch.updateWorldMatrix(true,true);}
 
 let faceMaterial;head.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(m.name==='Material.003')faceMaterial=m;});
 if(!faceMaterial)throw Error('Face material missing');
@@ -137,11 +132,12 @@ const liftStart=new THREE.Vector3();let liftStartScale=.1;
 let capsuleScale=1;
 function fitReveal(){
  const tanHalf=Math.tan(THREE.MathUtils.degToRad(revealCamera.fov/2)),distance=revealCamera.position.z;
- capsuleScale=distance*Math.sin(Math.atan(tanHalf*Math.min(1,revealCamera.aspect)*.9))/.91;
+ capsuleScale=distance*Math.sin(Math.atan(tanHalf*Math.min(1,revealCamera.aspect)*.68))/.91;
  exhibit.scale.setScalar(capsuleScale*(exhibit.userData.zoom??1));
  const size=prizePreview.userData.size;if(!size)return;
- const height=distance*tanHalf*2,width=height*revealCamera.aspect;
- prizePreview.userData.scale=.94*Math.min(width*.90/size.x,height*.78/size.y);
+ // Leave room around the reward, including its depth and the pop overshoot.
+ const limitX=tanHalf*revealCamera.aspect*.64,limitY=tanHalf*.54;
+ prizePreview.userData.scale=distance*Math.min(limitX/(size.x/2+limitX*size.z/2),limitY/(size.y/2+limitY*size.z/2))/1.03;
  if(prizePreview.visible)prizePreview.scale.setScalar(prizePreview.userData.scale);
 }
 function rebuildPreview(){prizePreview.clear();const clone=(currentModel()||customSSR||ssr).clone(true);clone.visible=true;clone.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(clone),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());clone.position.sub(center);prizePreview.add(clone);prizePreview.userData.size=size;fitReveal();}
@@ -237,7 +233,7 @@ function draw(){
  if(state!=='ready'||!coinCredit)return;coinCredit=false;coinRig.coin.visible=false;count++;progress=0;bounceCount=0;dropCorrection=0;ballLaunched=false;rolling.visible=false;setFace(1);blinkEnd=0;
  const outcome=rollWithPity(DEFAULT_ODDS,misses,PITY_LIMIT);misses=outcome.misses;pity=outcome.pity;currentPrize=pickPrize(PRIZES,outcome.rarity);
  capsuleColor=randomCapsuleColor();hideRewards();commonPivot.rotation.set(0,0,0);rewardPivot.rotation.set(0,0,0);rebuildPreview();
- speechDismissed=true;look.setColor(rolling,capsuleColor);look.setColor(reveal,capsuleColor);hatchInside.visible=true;
+ speechDismissed=true;look.setColor(rolling,capsuleColor);look.setColor(reveal,capsuleColor);
  transition('dispensing');tone(350);navigator.vibrate?.(25);
 }
 function chooseLanding(){
@@ -271,7 +267,7 @@ function launchBall(){
 function updateDispense(dt){
  const opening=hatchOpening(age,reduced.matches);
  hinge.quaternion.setFromAxisAngle(hatchRight,-opening);
- hatch.visible=true;hatchInside.visible=opening>.012;if(age>=HATCH_DURATION)closeHatch();
+ hatch.visible=true;if(age>=HATCH_DURATION)closeHatch();
  for(let i=0;i<HATCH_CONTACTS.length;i++)if(age>=HATCH_CONTACTS[i]&&age-dt<HATCH_CONTACTS[i])tone(i===0?960:720,i===0?.035:.025);
  if(age>=.38&&!ballLaunched)launchBall();
  if(ballLaunched){
@@ -502,7 +498,7 @@ if(new URLSearchParams(location.search).has('qa'))window.gachaDiagnostics=()=>({
  ballScreens:balls.map(b=>projected(b.position)),knob:knobCenter(),capsulePoint:projected(exhibit.position,revealCamera),rewardPoint:projected(currentPivot().position),
  camera:{position:camera.position.toArray(),quaternion:camera.quaternion.toArray(),fov:camera.fov,aspect:camera.aspect},headRotation:neck.rotation.toArray(),headRest,
  capsuleRotation:exhibit.rotation.toArray(),previewRotation:prizePreview.rotation.toArray(),rewardRotation:rewardPivot.rotation.toArray(),capsuleColor:reveal.userData.colorIndex,headTarget:pointerTarget.toArray(),cameraFollow:pointerSmooth.toArray(),
- hatchAngle:hinge.quaternion.angleTo(new THREE.Quaternion()),hatchVisible:hatch.visible,hatchInsideVisible:hatchInside.visible,hatchPosition:hatch.position.toArray(),hatchRestPosition:hatchRest.position.toArray(),hatchPoint:projected(hatchCenter),capsuleRolling:rolling.visible,rollingPosition:rolling.position.toArray(),rollingScreen:projected(rolling.position),bounceCount,prizePreview:prizePreview.visible,
+ hatchAngle:hinge.quaternion.angleTo(new THREE.Quaternion()),hatchVisible:hatch.visible,hatchInsideVisible:false,hatchPosition:hatch.position.toArray(),hatchRestPosition:hatchRest.position.toArray(),hatchPoint:projected(hatchCenter),capsuleRolling:rolling.visible,rollingPosition:rolling.position.toArray(),rollingScreen:projected(rolling.position),bounceCount,prizePreview:prizePreview.visible,
  progress,guide:!guide.hidden,guideRotation:guide.style.getPropertyValue('--crank-angle'),authored:true,blurCaptures:compositor.captures,blurAmount:compositor.soften,backgroundDarkness:compositor.darkness,cameraPull,dropStyle:dropProfiles[dropStyle].name,dropCorrection,
  handBaseY,rewardBottom:currentModel()?new THREE.Box3().setFromObject(currentModel()).min.y:null,rewardY:currentPivot().position.y,discardedScreen:discarded?projected(discarded.position):null,
  rollVelocity:rollVelocity.toArray(),dropImpacts:drop.impacts,dropSettled:drop.settled,liftStart:liftStart.toArray(),previewPop:prizePreview.scale.x/prizePreview.userData.scale,

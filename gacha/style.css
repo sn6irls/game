@@ -158,3 +158,8 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 .drawn-ui #drawer .prize-card b{font:400 11px/1.4 GachaPixel,monospace;color:#aaa;opacity:1;margin-top:6px;letter-spacing:1px}
 @media(max-width:520px){#play-actions{gap:9px}.result-buttons{flex-direction:column;gap:0}#reward-grade{font-size:12px}.drawn-ui #prize-list{gap:26px 16px}#coin-label{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.coin-ring{animation:none}}
+
+#play-actions #play-again{font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
+@keyframes again-blink{0%,60%,100%{opacity:1}61%,95%{opacity:.25}}
+#play-actions #play-again:hover,#play-actions #play-again:focus-visible{animation:none;opacity:1}
+@media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
