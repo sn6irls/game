@@ -119,12 +119,9 @@ body.speech-dismissed .speech{visibility:hidden;opacity:0!important;pointer-even
 #play-actions{position:fixed;left:50%;bottom:max(8vh,36px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:28px;z-index:12}
 #play-actions button,#play-actions #save-photo{border:0;border-radius:0;background:none;padding:12px 8px;color:white;font:400 24px GachaPixel,monospace;text-shadow:2px 2px #000,-1px -1px #000;white-space:nowrap;width:auto;height:auto}
 #play-actions button:hover{color:#fff3ac}
-#start-screen{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:#0004;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
-#start-game{max-width:92vw;padding:24px 16px;border:0;border-radius:0;background:none;color:white;font:400 clamp(26px,5.5vw,48px)/1.4 GachaPixel,monospace;letter-spacing:-1px;text-shadow:3px 3px #171717,-1px -1px #171717}
-#start-game:hover{transform:scale(1.035);color:#fff3ac}
-#start-error{position:absolute;top:60%;left:10%;right:10%;text-align:center;font:16px GachaPixel,monospace;color:white}
-body.waiting-start{background:#29272b}
-body.waiting-start header,body.waiting-start #hud,body.waiting-start #play-actions{visibility:hidden;pointer-events:none}
+#scene-error{position:fixed;z-index:40;top:45%;left:10%;right:10%;text-align:center;font:16px/1.6 GachaPixel,monospace;color:white}
+body.scene-pending{background:#171c34}
+body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actions{visibility:hidden;pointer-events:none}
 @media(max-width:520px){#play-actions{flex-direction:column;gap:0}#play-actions button,#play-actions #save-photo{font-size:20px;padding:8px 12px}}
 #gesture-guide.coin-guide{width:62px;height:62px;border:2px solid #fffc;box-shadow:0 0 6px #fff5}
 

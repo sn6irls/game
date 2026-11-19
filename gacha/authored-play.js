@@ -20,21 +20,19 @@ import {createCoinMechanism,COIN_CONTACT_TIME} from './coin-mechanism.js';
 installDrawnUI();
 
 const $=s=>document.querySelector(s),clamp=THREE.MathUtils.clamp,lerp=THREE.MathUtils.lerp;
-let startRequested=false,startWhenReady=null;
-$('#start-game').onclick=()=>{startRequested=true;startWhenReady?.();};
 const canvas=$('#world'),renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoToneMapping;
 renderer.localClippingEnabled=true;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
-const loader=new GLTFLoader(),scene=new THREE.Scene();scene.background=new THREE.Color('#080a10');
+const loader=new GLTFLoader(),scene=new THREE.Scene();scene.background=new THREE.Color('#171c34');
 let loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture;
 try{
  [loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture]=await Promise.all([
   loader.loadAsync('./asset/authored-scene.glb'),loader.loadAsync('./asset/ssr-lowpoly.glb'),
   fetch('./asset/capsule-mesh.json').then(r=>r.json()),new THREE.TextureLoader().loadAsync('./asset/capsule-photo.png'),fetch('./asset/capsule-floor-mesh.json').then(r=>r.json()),loader.loadAsync('./asset/user-coin.glb'),new THREE.ImageLoader().loadAsync('./asset/쓰레기.png'),new THREE.ImageLoader().loadAsync('./asset/노말.png'),new THREE.TextureLoader().loadAsync('./asset/face.png')
  ]);
-}catch(error){$('#start-error').hidden=false;$('#start-error').textContent='장면을 불러오지 못했어요. 새로고침해 주세요.';throw error;}
+}catch(error){$('#scene-error').hidden=false;$('#scene-error').textContent='장면을 불러오지 못했어요. 새로고침해 주세요.';throw error;}
 const authored=loaded.scene;scene.add(authored,ssrLoaded.scene);
 function bakedColors(root){root.traverse(o=>{
  if(!o.isMesh)return;
@@ -47,7 +45,7 @@ const find=(root,name)=>root.getObjectByName(name)||root.getObjectByName(name.re
 const body=find(authored,'body'),head=find(authored,'head'),trash=find(authored,'trash'),ssr=find(ssrLoaded.scene,'ssr');
 const machine=find(authored,'gacha'),knob=find(authored,'gacha.001'),hatch=find(authored,'gacha.002'),floor=find(authored,'back.002');
 if(!body||!head||!trash||!ssr||!knob||!hatch)throw Error('Authored scene object missing');
-// Extend the dark authored wall across desktop/ultrawide views. Anchor its
+// Extend the blue authored wall across desktop/ultrawide views. Anchor its
 // bottom edge so the floor, machines and character keep their existing layout.
 const backdrop=find(authored,'back');
 if(backdrop?.isMesh){
@@ -69,7 +67,8 @@ for(const root of [find(authored,'back'),machine,find(authored,'back.001')])shad
 const floorMap=floor.material.map.clone();floorMap.wrapS=floorMap.wrapT=THREE.MirroredRepeatWrapping;floorMap.repeat.set(6,6);floorMap.needsUpdate=true;
 floor.visible=false;
 const roomFloor=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshBasicMaterial({map:floorMap,toneMapped:false}));roomFloor.rotation.x=-Math.PI/2;roomFloor.position.y=floorY;scene.add(roomFloor);shadowReceiver(roomFloor);
-const roomWall=new THREE.Mesh(new THREE.PlaneGeometry(40,16),new THREE.MeshBasicMaterial({color:0x080a10}));roomWall.position.set(0,7.9,-2.1);scene.add(roomWall);
+// No extra front wall: it intersected the tilted blue backdrop and covered its
+// left half. The expanded authored mesh is the wall; the clear color matches it.
 installMachinePrice(machine,renderer);
 
 // A real elevated perspective camera, orbiting a point between the girl and machine.
@@ -79,7 +78,7 @@ homeOrbit.theta+=.13;homeOrbit.phi+=.035;
 const pointerTarget=new THREE.Vector2(),pointerSmooth=new THREE.Vector2(),manualOrbit=new THREE.Vector2();
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 let view={x:0,y:0,width:1,height:1},fit=1;
-let cameraPull=0,pullFrom=0,pullTo=0,pullAge=1,startPull=1;
+let cameraPull=0,pullFrom=0,pullTo=0,pullAge=1;
 const headBox=new THREE.Box3().setFromObject(head),neck=new THREE.Group();
 neck.position.set((headBox.min.x+headBox.max.x)/2,headBox.min.y+.025,(headBox.min.z+headBox.max.z)/2);scene.add(neck);neck.attach(head);
 const headRest={pitch:-.055,yaw:.11};neck.rotation.set(headRest.pitch,headRest.yaw,0);
@@ -188,7 +187,7 @@ function projected(point,cam=camera){const p=point.clone().project(cam);return {
 function pointerRay(e,cam=camera){pointer.set(e.clientX/view.width*2-1,1-e.clientY/view.height*2);cam.updateMatrixWorld();raycaster.setFromCamera(pointer,cam);}
 function updateCamera(dt=1,followPointer=true){
  if(followPointer)pointerSmooth.lerp(pointerTarget,1-Math.exp(-dt*6));
- const orbit=homeOrbit.clone();orbit.radius*=fit*(1+startPull*.11+(reduced.matches?0:cameraPull*.085));
+ const orbit=homeOrbit.clone();orbit.radius*=fit*(1+(reduced.matches?0:cameraPull*.085));
  orbit.theta+=manualOrbit.x+(reduced.matches?0:pointerSmooth.x*.065);
  orbit.phi+=manualOrbit.y+(reduced.matches?0:pointerSmooth.y*.035);
  camera.position.setFromSpherical(orbit).add(cameraTarget);camera.lookAt(cameraTarget);camera.updateMatrixWorld();
@@ -205,7 +204,7 @@ function resize(){
 resize();addEventListener('resize',resize);
 scene.updateMatrixWorld(true);
 
-let lang='ko',state='start',count=0,spent=0,coinCredit=false,age=0,elapsed=0,progress=0,knobAngle=0,drag=null;
+let lang='ko',state='ready',count=0,spent=0,coinCredit=false,age=0,elapsed=0,progress=0,knobAngle=0,drag=null;
 let blinkAt=3,blinkEnd=0,guideAge=0,guideDismissed=false,photoBusy=false,speechDismissed=false;
 const actions=document.createElement('div');actions.id='play-actions';actions.hidden=true;
 const rewardInfo=document.createElement('div');rewardInfo.id='reward-info';rewardInfo.setAttribute('aria-live','polite');rewardInfo.innerHTML='<small id="reward-grade"></small><strong id="reward-name"></strong>';
@@ -228,8 +227,8 @@ function syncUI(){
  $('#reward-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#reward-name').textContent=currentPrize?.[lang]||'';
  actions.hidden=!resultState();again.setAttribute('aria-label',lang==='ko'?(state==='won'?'처음부터 다시':'다시 뽑기'):(state==='won'?'Start over':'Try again'));
 }
-function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=['zooming','capsule','opening'].includes(state);document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['start','inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
-setFace(1);transition('start');
+function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=['zooming','capsule','opening'].includes(state);document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
+setFace(1);
 let audio;
 function tone(hz,duration=.08,delay=0){try{audio??=new AudioContext();audio.resume();const oscillator=audio.createOscillator(),gain=audio.createGain(),now=audio.currentTime+delay;oscillator.type='triangle';oscillator.frequency.setValueAtTime(hz,now);gain.gain.setValueAtTime(.055,now);gain.gain.exponentialRampToValueAtTime(.001,now+duration);oscillator.connect(gain);gain.connect(audio.destination);oscillator.start(now);oscillator.stop(now+duration);}catch{}}
 function insertCoin(){if(state!=='ready'||coinCredit)return;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();progress=0;transition('inserting');tone(1450,.045);navigator.vibrate?.(12);}
@@ -346,7 +345,6 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
  if(modal())return;pointerRay(e);canvas.setPointerCapture(e.pointerId);lastFloor=null;
  const start={x:e.clientX,y:e.clientY,time:e.timeStamp,total:0};
- if(state==='start')return;
  if(e.button===1&&!['inserting','dispensing','zooming','capsule','opening'].includes(state)){e.preventDefault();drag={...start,type:'orbit'};return;}
  if(state==='ready'){
   const c=knobCenter(),coinPoint=projected(coinRig.coin.position);
@@ -367,7 +365,7 @@ canvas.addEventListener('pointerdown',e=>{
  }
 });
 canvas.addEventListener('pointermove',e=>{
- if(modal()||state==='start')return;
+ if(modal())return;
  pointerTarget.set(clamp(e.clientX/view.width*2-1,-1,1),clamp(e.clientY/view.height*2-1,-1,1));
  if(!drag){sweepFloor(e);sweepVisibleBalls(e);return;}
  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.total+=Math.abs(dx)+Math.abs(dy);
@@ -458,13 +456,12 @@ function frame(now){
  const nextPull=['zooming','capsule','opening'].includes(state)?1:0;
  if(nextPull!==pullTo){pullFrom=cameraPull;pullTo=nextPull;pullAge=0;}pullAge+=dt;
  cameraPull=lerp(pullFrom,pullTo,THREE.MathUtils.smootherstep(pullAge,0,.7));
- startPull=lerp(startPull,state==='start'?1:0,1-Math.exp(-dt*5));
  if(!modal()){
   updateCamera(dt,!focus);if(!focus||state==='dispensing'){const follow=1-Math.exp(-dt*18);
    neck.rotation.y=lerp(neck.rotation.y,headRest.yaw+pointerTarget.x*.24,follow);neck.rotation.x=lerp(neck.rotation.x,headRest.pitch+pointerTarget.y*.13,follow);
   }
  }
- if(state==='ready'||state==='start'){
+ if(state==='ready'){
   if(elapsed>blinkAt&&!blinkEnd){setFace(2);blinkEnd=elapsed+.13;}
   if(blinkEnd&&elapsed>blinkEnd){setFace(1);blinkEnd=0;blinkAt=elapsed+2.5+Math.random()*3;}
  }
@@ -495,8 +492,8 @@ function frame(now){
  compositor.render(scene,camera,overlay,revealCamera,focused,dt,!reduced.matches&&cameraPull<.9999,reduced.matches);
 }
 compositor.warmup();document.body.classList.add('authored-game','spatial-game');$('#reveal-ui').hidden=true;
-startWhenReady=()=>{if(state!=='start')return;document.body.classList.remove('waiting-start');$('#start-screen').hidden=true;canvas.tabIndex=0;canvas.focus({preventScroll:true});setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;transition('ready');};
-if(startRequested)startWhenReady();requestAnimationFrame(frame);
+canvas.tabIndex=0;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;transition('ready');
+document.body.classList.remove('scene-pending');requestAnimationFrame(frame);
 if(new URLSearchParams(location.search).has('qa'))window.gachaDiagnostics=()=>({
  reaction:{kind:lineKind,index:lineIndex,emotion:reactionEmotion,bubble:bubbleKind()},
  coinFacing:Math.abs(coinRig.coin.quaternion.dot(camera.quaternion)),coinScale:coinRig.coin.scale.x,
@@ -506,7 +503,7 @@ if(new URLSearchParams(location.search).has('qa'))window.gachaDiagnostics=()=>({
  camera:{position:camera.position.toArray(),quaternion:camera.quaternion.toArray(),fov:camera.fov,aspect:camera.aspect},headRotation:neck.rotation.toArray(),headRest,
  capsuleRotation:exhibit.rotation.toArray(),previewRotation:prizePreview.rotation.toArray(),rewardRotation:rewardPivot.rotation.toArray(),capsuleColor:reveal.userData.colorIndex,headTarget:pointerTarget.toArray(),cameraFollow:pointerSmooth.toArray(),
  hatchAngle:hinge.quaternion.angleTo(new THREE.Quaternion()),hatchVisible:hatch.visible,hatchInsideVisible:hatchInside.visible,hatchPosition:hatch.position.toArray(),hatchRestPosition:hatchRest.position.toArray(),hatchPoint:projected(hatchCenter),capsuleRolling:rolling.visible,rollingPosition:rolling.position.toArray(),rollingScreen:projected(rolling.position),bounceCount,prizePreview:prizePreview.visible,
- progress,guide:!guide.hidden,guideRotation:guide.style.getPropertyValue('--crank-angle'),authored:true,blurCaptures:compositor.captures,blurAmount:compositor.soften,backgroundDarkness:compositor.darkness,cameraPull,startPull,dropStyle:dropProfiles[dropStyle].name,dropCorrection,
+ progress,guide:!guide.hidden,guideRotation:guide.style.getPropertyValue('--crank-angle'),authored:true,blurCaptures:compositor.captures,blurAmount:compositor.soften,backgroundDarkness:compositor.darkness,cameraPull,dropStyle:dropProfiles[dropStyle].name,dropCorrection,
  handBaseY,rewardBottom:currentModel()?new THREE.Box3().setFromObject(currentModel()).min.y:null,rewardY:currentPivot().position.y,discardedScreen:discarded?projected(discarded.position):null,
  rollVelocity:rollVelocity.toArray(),dropImpacts:drop.impacts,dropSettled:drop.settled,liftStart:liftStart.toArray(),previewPop:prizePreview.scale.x/prizePreview.userData.scale,
  landingPoint:landingPoint.toArray(),landingScreen:projected(landingPoint),firstLanding:firstLanding.toArray(),capsuleScale,previewScale:prizePreview.userData.scale,previewSize:prizePreview.userData.size.toArray(),flashStrength
