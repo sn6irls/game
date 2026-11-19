@@ -11,4 +11,4 @@
 
 평범양의 하교버스 musicgame https://sn6irls.github.io/game/music/
 
-전시용 수정 및 테스트 기록: [EXHIBITION-CHECK.md](EXHIBITION-CHECK.md)
+슈퍼짱의 가챠뽑기 Super Gacha https://sn6irls.github.io/game/gacha/

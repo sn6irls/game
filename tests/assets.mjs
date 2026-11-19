@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
-const root=fileURLToPath(new URL('../',import.meta.url)),games=['desktop','frame','music','schoolmeal','kimchibingsumaker'];
+const root=fileURLToPath(new URL('../',import.meta.url)),games=['desktop','frame','music','schoolmeal','kimchibingsumaker','gacha'];
 let urls=0,scripts=0;
 function existsExactly(file){
  const relative=path.relative(root,file);
@@ -23,7 +23,7 @@ for(const game of games)for(const file of walk(path.join(root,game))){
  if(['.js','.mjs','.cjs'].includes(ext)){execFileSync(process.execPath,['--check',file],{stdio:'pipe'});scripts++;}
  const re=ext==='.html'?/(?:src|href)="([^"<>]+)"/g:ext==='.css'?/url\(["']?([^"')]+)["']?\)/g:/\b(?:from\s+|import\s*\()["'](\.[^"']+)["']/g;
  for(const match of text.matchAll(re)){
-  const ref=match[1];if(/^(?:[a-z]+:|\/\/|#)|[${}]/i.test(ref))continue;
+  const ref=match[1];if(/^(?:[a-z]+:|\/\/|#|%23)|[${}]/i.test(ref))continue;
   existsExactly(path.resolve(path.dirname(file),decodeURIComponent(ref.split(/[?#]/)[0])));
  }
 }
