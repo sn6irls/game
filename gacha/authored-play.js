@@ -27,7 +27,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoToneMapping;
 renderer.localClippingEnabled=true;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
-const loader=new GLTFLoader(),scene=new THREE.Scene();scene.background=new THREE.Color('#726b5c');
+const loader=new GLTFLoader(),scene=new THREE.Scene();scene.background=new THREE.Color('#080a10');
 let loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture;
 try{
  [loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture]=await Promise.all([
@@ -47,6 +47,15 @@ const find=(root,name)=>root.getObjectByName(name)||root.getObjectByName(name.re
 const body=find(authored,'body'),head=find(authored,'head'),trash=find(authored,'trash'),ssr=find(ssrLoaded.scene,'ssr');
 const machine=find(authored,'gacha'),knob=find(authored,'gacha.001'),hatch=find(authored,'gacha.002'),floor=find(authored,'back.002');
 if(!body||!head||!trash||!ssr||!knob||!hatch)throw Error('Authored scene object missing');
+// Extend the dark authored wall across desktop/ultrawide views. Anchor its
+// bottom edge so the floor, machines and character keep their existing layout.
+const backdrop=find(authored,'back');
+if(backdrop?.isMesh){
+ const geometry=backdrop.geometry.clone();geometry.computeBoundingBox();
+ const centerX=(geometry.boundingBox.min.x+geometry.boundingBox.max.x)/2,baseZ=geometry.boundingBox.max.z;
+ geometry.translate(-centerX,0,-baseZ);geometry.scale(5,1,3);geometry.translate(centerX,0,baseZ);
+ geometry.computeBoundingBox();geometry.computeBoundingSphere();backdrop.geometry=geometry;
+}
 const initial={ssr:ssr.matrix.clone(),trash:trash.matrix.clone()};
 const floorY=new THREE.Box3().setFromObject(floor).min.y;
 const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(-1.4,3,1.46);light.target.position.set(0,.4,0);
@@ -60,7 +69,7 @@ for(const root of [find(authored,'back'),machine,find(authored,'back.001')])shad
 const floorMap=floor.material.map.clone();floorMap.wrapS=floorMap.wrapT=THREE.MirroredRepeatWrapping;floorMap.repeat.set(6,6);floorMap.needsUpdate=true;
 floor.visible=false;
 const roomFloor=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshBasicMaterial({map:floorMap,toneMapped:false}));roomFloor.rotation.x=-Math.PI/2;roomFloor.position.y=floorY;scene.add(roomFloor);shadowReceiver(roomFloor);
-const roomWall=new THREE.Mesh(new THREE.PlaneGeometry(14,5),new THREE.MeshStandardMaterial({color:0x77705c,roughness:1}));roomWall.position.set(0,2.4,-2.1);roomWall.receiveShadow=true;scene.add(roomWall);
+const roomWall=new THREE.Mesh(new THREE.PlaneGeometry(40,16),new THREE.MeshBasicMaterial({color:0x080a10}));roomWall.position.set(0,7.9,-2.1);scene.add(roomWall);
 installMachinePrice(machine,renderer);
 
 // A real elevated perspective camera, orbiting a point between the girl and machine.
