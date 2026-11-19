@@ -41,4 +41,10 @@ nav svg{width:28px;height:28px;shape-rendering:crispEdges}.pixel{fill:currentCol
  .entry-note,#status.error{font-size:16px}
  #start{font-size:18px;min-height:56px}
  .capture-tip,#save-note,#eye-notice{font-size:14px}
+ nav button{width:clamp(44px,8dvh,72px);height:clamp(44px,8dvh,72px)}
+ nav svg{width:clamp(28px,4.2dvh,38px);height:clamp(28px,4.2dvh,38px)}
+ #shutter{width:clamp(48px,10dvh,90px);height:clamp(48px,10dvh,90px)}
+ .save-buttons{grid-template-columns:1fr 64px 1fr}
+ .save-buttons a{width:64px;height:60px}
+ .save-buttons svg{width:34px;height:34px}
 }
