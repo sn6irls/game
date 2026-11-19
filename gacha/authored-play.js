@@ -1,13 +1,14 @@
 import * as THREE from './vendor/three/three.module.js';
 import {GLTFLoader} from './vendor/three/addons/loaders/GLTFLoader.js';
+import {loadModel} from './load-model.js';
 import {createCapsuleLook,randomCapsuleColor} from './capsule-look.js';
 import {viewportPlanes} from './scene-effects.js';
-import {createFocusBackdrop} from './focus-backdrop.js';
+import {createFocusBackdrop} from './focus-backdrop.js?v=fast-load';
 import {CapsuleDrop,SmoothRotation,rewardPop,hatchOpening,HATCH_DURATION,HATCH_CONTACTS} from './capsule-motion.js';
 import {CapsulePhysics} from './capsule-physics.js';
 import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
-import {PRIZES,createPrizeLibrary} from './prize-library.js';
+import {PRIZES,createPrizeLibrary} from './prize-library.js?v=fast-load';
 import {reactionFor,dialogueText} from './reward-reactions.js';
 import {applyFaceFrame} from './face-atlas.js';
 import {captureGameFrame} from './capture-game.js';
@@ -29,8 +30,8 @@ const loader=new GLTFLoader(),scene=new THREE.Scene();scene.background=new THREE
 let loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture;
 try{
  [loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture]=await Promise.all([
-  loader.loadAsync('./asset/authored-scene.glb'),loader.loadAsync('./asset/ssr-lowpoly.glb'),
-  fetch('./asset/capsule-mesh.json').then(r=>r.json()),new THREE.TextureLoader().loadAsync('./asset/capsule-photo.png'),fetch('./asset/capsule-floor-mesh.json').then(r=>r.json()),loader.loadAsync('./asset/user-coin.glb'),new THREE.ImageLoader().loadAsync('./asset/쓰레기.png'),new THREE.ImageLoader().loadAsync('./asset/노말.png'),new THREE.TextureLoader().loadAsync('./asset/face.png')
+  loadModel(loader,'./asset/scene-web.glb'),loadModel(loader,'./asset/ssr-lowpoly.glb'),
+  fetch('./asset/capsule-mesh.json').then(r=>r.json()),new THREE.TextureLoader().loadAsync('./asset/capsule-photo.png'),fetch('./asset/capsule-floor-mesh.json').then(r=>r.json()),loader.loadAsync('./asset/user-coin.glb'),new THREE.ImageLoader().loadAsync('./asset/trash.webp'),new THREE.ImageLoader().loadAsync('./asset/normal.webp'),new THREE.TextureLoader().loadAsync('./asset/face.webp')
  ]);
 }catch(error){$('#scene-error').hidden=false;$('#scene-error').textContent='장면을 불러오지 못했어요. 새로고침해 주세요.';throw error;}
 const authored=loaded.scene;scene.add(authored,ssrLoaded.scene);
@@ -107,10 +108,15 @@ let customSSR=null,customThumb=null;
 const commonPivot=new THREE.Group();new THREE.Box3().setFromObject(trash).getCenter(commonPivot.position);scene.add(commonPivot);commonPivot.attach(trash);trash.visible=false;
 const handLift=.04,handBaseY=new THREE.Box3().setFromObject(trash).min.y+handLift;
 rewardPivot.position.y+=handLift;commonPivot.position.y+=handLift;
-const library=createPrizeLibrary(trash,ssr,trashAtlas,normalAtlas);for(const model of library.models.values()){commonPivot.add(model);model.visible=false;}
+const library=createPrizeLibrary(trash,ssr,trashAtlas,normalAtlas);
 let currentPrize=null,misses=0,pity=false,capsuleColor=0,lineKind='idle',lineIndex=0,reactionEmotion='neutral';
 const owned=new Map();
-function currentModel(){return currentPrize?.id==='receipt'?trash:currentPrize?.rarity==='SSR'?(customSSR||ssr):library.models.get(currentPrize?.id);}
+function currentModel(){
+ if(!currentPrize)return null;
+ if(currentPrize.id==='receipt')return trash;
+ if(currentPrize.rarity==='SSR')return customSSR||ssr;
+ const model=library.getModel(currentPrize.id);if(!model.parent)commonPivot.add(model);return model;
+}
 function currentPivot(){return currentPrize?.rarity==='SSR'?rewardPivot:commonPivot;}
 function hideRewards(){trash.visible=ssr.visible=false;if(customSSR)customSSR.visible=false;for(const model of library.models.values())model.visible=false;}
 function keepRewardAboveHands(){
@@ -410,7 +416,7 @@ $('#language').onclick=()=>{lang=lang==='ko'?'en':'ko';syncUI();};
 $('#settings').onclick=()=>{
  const list=$('#prize-list');list.replaceChildren();
  for(const prize of PRIZES){
-  const found=owned.has(prize.id),card=document.createElement('div');card.className='prize-card '+(found?'unlocked':'locked');card.setAttribute('role','listitem');const img=new Image();img.src=prize.id==='angel'&&customThumb?customThumb:library.thumbs.get(prize.id);img.alt='';const label=document.createElement('div');label.className='prize-name';label.textContent=found?prize[lang]:'???';const rarity=document.createElement('b');rarity.textContent=gradeName(prize.rarity);card.append(img,label,rarity);list.append(card);
+  const found=owned.has(prize.id),card=document.createElement('div');card.className='prize-card '+(found?'unlocked':'locked');card.setAttribute('role','listitem');const img=new Image();img.src=prize.id==='angel'&&customThumb?customThumb:library.getThumb(prize.id);img.alt='';const label=document.createElement('div');label.className='prize-name';label.textContent=found?prize[lang]:'???';const rarity=document.createElement('b');rarity.textContent=gradeName(prize.rarity);card.append(img,label,rarity);list.append(card);
  }$('#drawer').showModal();
 };
 $('#drawer').addEventListener('click',e=>{if(e.target===$('#drawer'))$('#drawer').close();});
@@ -487,9 +493,13 @@ function frame(now){
  const focused=['zooming','capsule','opening'].includes(state);
  compositor.render(scene,camera,overlay,revealCamera,focused,dt,!reduced.matches&&cameraPull<.9999,reduced.matches);
 }
-compositor.warmup();document.body.classList.add('authored-game','spatial-game');$('#reveal-ui').hidden=true;
+document.body.classList.add('authored-game','spatial-game');$('#reveal-ui').hidden=true;
 canvas.tabIndex=0;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;transition('ready');
-document.body.classList.remove('scene-pending');requestAnimationFrame(frame);
+requestAnimationFrame(now=>{
+ frame(now);document.body.classList.remove('scene-pending');$('#scene-loading').hidden=true;document.body.removeAttribute('aria-busy');
+ // The focus effect is not used until a pull. Compile it without delaying play.
+ const idle=globalThis.requestIdleCallback||((fn)=>setTimeout(fn,50));idle(()=>{compositor.warmup().catch(()=>{});},{timeout:1500});
+});
 if(new URLSearchParams(location.search).has('qa'))window.gachaDiagnostics=()=>({
  reaction:{kind:lineKind,index:lineIndex,emotion:reactionEmotion,bubble:bubbleKind()},
  coinFacing:Math.abs(coinRig.coin.quaternion.dot(camera.quaternion)),coinScale:coinRig.coin.scale.x,

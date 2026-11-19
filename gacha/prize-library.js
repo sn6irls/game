@@ -23,37 +23,39 @@ export const PRIZES=[
  {id:'angel',rarity:'SSR',ko:'천사의 주방장 · 소라',en:'Angel Chef · Sora'}
 ];
 
-// One small offscreen renderer produces reusable stills, never an extra render per frame.
+// Build only the prize that is drawn. Collection thumbnails and their offscreen
+// renderer are also lazy, so none of this blocks the first playable frame.
 export function createPrizeLibrary(receipt,ssr,trashAtlas,normalAtlas){
- const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(384,384);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor(0,0);
+ let renderer;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.01,20);camera.position.set(0,.6,4.3);camera.lookAt(0,0,0);
  const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(-3,5,5);scene.add(light,new THREE.HemisphereLight(0xffffff,0x81766a,1.8));
  function photograph(model){
+  if(!renderer){renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(384,384);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor(0,0);}
   const clone=model.clone(true);clone.visible=true;clone.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(clone),size=box.getSize(new THREE.Vector3());clone.position.sub(box.getCenter(new THREE.Vector3()));
   const group=new THREE.Group();group.add(clone);group.scale.setScalar(2/Math.max(size.x,size.y,size.z));scene.add(group);renderer.render(scene,camera);
   const still=document.createElement('canvas');still.width=still.height=384;still.getContext('2d').drawImage(renderer.domElement,0,0);scene.remove(group);return still;
  }
- const models=new Map(),thumbs=new Map();
- for(const prize of PRIZES){
-  const trashCutout=!!TRASH_CROPS[prize.id],normalCutout=!!NORMAL_CROPS[prize.id],fromAtlas=trashCutout||normalCutout;
-  const source=fromAtlas?null:prize.id==='receipt'?receipt:ssr;
-  const still=trashCutout?cropTrash(trashAtlas,prize.id):normalCutout?cropNormal(normalAtlas,prize.id):photograph(source);
-  thumbs.set(prize.id,still.toDataURL('image/png'));
-  if(prize.id==='receipt'||prize.id==='angel')continue;
+ const models=new Map(),thumbs=new Map(),stills=new Map();
+ function getStill(id){
+  if(!stills.has(id))stills.set(id,TRASH_CROPS[id]?cropTrash(trashAtlas,id):NORMAL_CROPS[id]?cropNormal(normalAtlas,id):photograph(id==='receipt'?receipt:ssr));
+  return stills.get(id);
+ }
+ function getThumb(id){if(!thumbs.has(id))thumbs.set(id,getStill(id).toDataURL('image/png'));return thumbs.get(id);}
+ function getModel(id){
+  if(id==='receipt')return receipt;if(id==='angel')return ssr;
+  if(models.has(id))return models.get(id);
+  const still=getStill(id);
   const model=createImagePrize(still);
   model.traverse(o=>{if(o.isMesh){const previous=o.material;
-   if(fromAtlas){
     // Keep the photographed color, with gentle real lighting on the curved surface.
     previous.color.setScalar(.5);previous.roughness=.78;previous.metalness=0;
     if(previous.map){previous.emissive.set(0xffffff);previous.emissiveMap=previous.map;previous.emissiveIntensity=.62;}
     previous.needsUpdate=true;
-   }else{o.material=new THREE.MeshBasicMaterial({map:previous.map,vertexColors:previous.vertexColors,side:THREE.DoubleSide,toneMapped:false,alphaTest:.12});previous.dispose();}
    o.castShadow=true;
   }});
   const sizes={tissue:.13,capsule:.09,banana:.16,anchovy:.125,gimbap:.10,lenses:.085,curler:.11,kelp:.13,hairball:.085,beef:.14,gum:.13,book:.13,glue:.14,mini:.12};
-  model.scale.setScalar(sizes[prize.id]??.13);models.set(prize.id,model);
-  source?.traverse(o=>{if(o.isMesh){o.geometry.dispose();o.material.map?.dispose();o.material.dispose();}});
+  model.scale.setScalar(sizes[id]??.13);model.visible=false;models.set(id,model);return model;
  }
- return {models,thumbs,photograph,dispose:()=>{renderer.dispose();renderer.forceContextLoss();}};
+ return {models,getModel,getThumb,photograph,dispose:()=>{renderer?.dispose();renderer?.forceContextLoss();}};
 }

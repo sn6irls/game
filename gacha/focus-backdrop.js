@@ -33,7 +33,7 @@ export function createFocusBackdrop(renderer,focusPoint){
  let ready=false,dirty=true,wasActive=false,fade=0,soften=0,captures=0,pixelScale=1;
  return {
   resize(w,h){pixelScale=Math.min(renderer.getPixelRatio(),1280/w);canvas.width=Math.round(w*pixelScale);canvas.height=Math.round(h*pixelScale);lens.uniforms.texel.value.set(1/canvas.width,1/canvas.height);depthTarget.setSize(Math.max(1,Math.round(w*.5)),Math.max(1,Math.round(h*.5)));softTarget.setSize(canvas.width,canvas.height);dirty=true;},
-  warmup(){for(const material of [lens,composite,shade]){quad.material=material;renderer.compile(scene,camera);}},
+  warmup(){const previous=quad.material;const work=[lens,composite,shade].map(material=>{quad.material=material;return renderer.compileAsync(scene,camera);});quad.material=previous;return Promise.all(work);},
   render(base,baseCamera,overlay,overlayCamera,active,dt,moving,reduced=false){
    fade=THREE.MathUtils.damp(fade,active?1:0,8,dt);
    if(active&&!wasActive){ready=false;soften=0;}
