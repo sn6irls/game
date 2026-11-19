@@ -86,3 +86,19 @@
 #mines-content .status{font-size:8px;padding:2px;min-height:15px}
 #tool-cursor.photo{width:90px;height:90px}
 #tool-cursor.gem{width:64px;height:64px}
+
+@media (min-width: 900px) and (pointer: fine) {
+ .xp-flyout{width:215px}
+ .xp-flyout button{font-size:15px;min-height:32px}
+ .language-dialog{font-size:16px;line-height:1.5}
+ .language-dialog label{width:68px}
+ .language-dialog select{width:calc(100% - 74px);height:32px;font:inherit}
+ .language-actions button{height:34px}
+ #language-tip,.mini-help{font-size:15px}
+ #mines-window{--w:270px;min-width:270px}
+ #mines-content .menu button{font-size:14px;padding:5px 7px}
+ #mines-content .status{font-size:13px;padding:5px;line-height:1.5}
+ #mines-content .mine-cell{font-size:17px;min-height:26px}
+ #mines-content .led{font-size:25px;min-width:48px}
+ #mines-content .mine-face{width:30px;height:30px}
+}

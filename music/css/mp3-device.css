@@ -142,9 +142,16 @@ html,body{background:#171717!important} .mp3-screen .stage canvas{filter:none}
 
 /* Desktop viewing distance: keep the device, enlarge only the start lettering. */
 @media (min-width: 900px) and (pointer: fine) {
- .song-title{width:min(86%,240px)}
- .start-caption{width:min(83%,224px);animation:none}
- .song-select{gap:8px}
- .transport-cluster .menu-button,.transport-cluster .menu-button[aria-expanded=true]{font-size:clamp(16px,calc(var(--wheel-diameter)*.078),22px)}
+ .song-title{width:min(90%,290px)}
+ .start-caption{width:min(88%,276px);animation:none}
+ .song-select{gap:12px;padding:16px}
+ .transport-cluster .menu-button,.transport-cluster .menu-button[aria-expanded=true]{font-size:clamp(20px,calc(var(--wheel-diameter)*.095),27px)}
+ .vn-text{height:64px}
+ .lyric-row{height:30px}
+ .lyric-row svg{width:22px;height:20px}
+ .record-result{width:min(460px,calc(100vw - 32px));font-size:18px}
+ .record-message{font-size:16px;line-height:1.6}
+ .record-actions .record-download{font-size:16px}
 }
 #status.audio-error{position:absolute;z-index:40;top:8%;left:12%;width:76%;height:auto;margin:0;padding:12px;clip-path:none;white-space:normal;background:#f1f3e9;color:#304624;text-align:center;font:14px/1.5 sans-serif;border-radius:6px}
+@media (min-width: 900px) and (pointer: fine) {#status.audio-error{font-size:18px}}

@@ -163,3 +163,22 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 @keyframes again-blink{0%,60%,100%{opacity:1}61%,95%{opacity:.25}}
 #play-actions #play-again:hover,#play-actions #play-again:focus-visible{animation:none;opacity:1}
 @media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
+
+@media (min-width: 900px) and (pointer: fine) {
+ .drawn-ui #speech-text{font-size:clamp(20px,calc(var(--bubble-font,20px) * 1.2),24px)}
+ #coin-tap{font-size:20px}
+ #reward-info{width:min(460px,56vw)}
+ #reward-grade{font-size:17px}
+ #reward-name{font-size:26px;line-height:1.4}
+ #play-actions button,#play-actions #save-photo{font-size:29px}
+ #scene-error,#toast{font-size:19px;line-height:1.5}
+ #ssr-drawer .swap-content{width:min(640px,92vw)}
+ #ssr-drawer h2{font-size:36px}
+ #ssr-drawer .swap-actions button{font-size:29px}
+ #ssr-drawer #ssr-notice{font-size:18px;line-height:1.5}
+ .drawn-ui #prize-list{max-width:960px;gap:34px 24px}
+ .drawn-ui #drawer .prize-card{flex-basis:152px}
+ .drawn-ui #drawer .prize-card img{width:112px;height:112px}
+ .drawn-ui #drawer .prize-name{font-size:18px;min-height:51px}
+ .drawn-ui #drawer .prize-card b{font-size:15px}
+}

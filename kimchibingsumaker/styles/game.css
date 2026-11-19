@@ -291,6 +291,9 @@ button:active {
 }
 
 @media (min-width: 900px) and (pointer: fine) {
- #instruction{font-size:18px;line-height:27px;width:276px;min-height:60px}
- #pixel-prompt{font-size:28px;line-height:34px}
+ #instruction{font-size:22px;line-height:32px;width:340px;min-height:76px;padding:18px 32px}
+ #pixel-prompt{font-size:34px;line-height:42px}
+ #controls button{font-size:34px;min-height:64px}
+ #controls #action{font-size:32px}
+ #error{font-size:18px;line-height:1.6}
 }

@@ -197,6 +197,21 @@ html[lang=en] .actions #save,html[lang=en] .actions #feed{flex:0 0 auto;max-widt
 html[lang=en] .actions #save img,html[lang=en] .actions #feed img{width:auto;height:var(--action-letter-height);max-width:none;max-height:none;object-fit:contain}
 
 @media (min-width: 900px) and (pointer: fine) {
- #picker #pngHint{font-size:17px}
- #backgroundMessage,#cameraMessage{font-size:16px;line-height:1.6}
+ #startGame .start-label-art{scale:1.2}
+ #speech{font-size:22px;line-height:1.4;width:210px;min-height:182px;padding:24px 27px 26px;left:calc(50% - 400px)}
+ .controls{max-width:680px}
+ .actions #save,.actions #feed{max-width:250px}
+ html[lang=ko] .actions #save img,html[lang=ko] .actions #feed img{height:70px}
+ html[lang=en] .actions{--action-letter-height:60px}
+ #sideTools button,#sideTools #bgmToggle{width:64px;height:64px;min-height:64px}
+ #sideTools img{width:52px;height:52px}
+ #sideTools #lang img{width:44px;height:44px}
+ #picker{width:min(500px,94vw)}
+ #picker>div button{flex-basis:148px}
+ #picker>div button img{width:132px;max-width:100%}
+ #picker #pngHint{font-size:20px;width:min(560px,88vw)}
+ #backgroundPicker{width:min(500px,92vw)}
+ #backgroundPicker>div button{font-size:25px}
+ #backgroundMessage,#cameraMessage{font-size:19px;line-height:1.6}
+ #status{font-size:18px;max-width:85vw;white-space:normal;line-height:1.5}
 }

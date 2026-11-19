@@ -37,10 +37,15 @@ nav svg{width:28px;height:28px;shape-rendering:crispEdges}.pixel{fill:currentCol
 .save-buttons .capture-tip{grid-column:1 / -1;grid-row:1;text-align:center;min-width:0;width:100%}
 
 @media (min-width: 900px) and (pointer: fine) {
- .entry h1{font-size:24px}
- .entry-note,#status.error{font-size:16px}
- #start{font-size:18px;min-height:56px}
- .capture-tip,#save-note,#eye-notice{font-size:14px}
+ .entry{max-width:360px}
+ .entry h1{font-size:28px}
+ .entry-note{font-size:20px;line-height:1.7}
+ #status.error{font-size:18px}
+ #start{font-size:22px;min-height:62px}
+ .capture-tip,#save-note,#eye-notice{font-size:18px}
+ .capture-tip{white-space:normal;word-break:keep-all}
+ dialog{width:min(94vw,520px)}
+ #timer{font-size:16px}
  nav button{width:clamp(44px,8dvh,72px);height:clamp(44px,8dvh,72px)}
  nav svg{width:clamp(28px,4.2dvh,38px);height:clamp(28px,4.2dvh,38px)}
  #shutter{width:clamp(48px,10dvh,90px);height:clamp(48px,10dvh,90px)}
