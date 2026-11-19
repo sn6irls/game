@@ -2,7 +2,7 @@ import * as THREE from "../vendor/three/three.module.js";
 import { loadModels } from "./models.js";
 import { createRoom } from "./room.js";
 import { createSeasoning } from "./seasoning.js";
-import { Sound } from "./sound.js";
+import { Sound } from "./sound.js?v=exhibit-20261119";
 import { installImageSave } from "./save-image.js";
 import { softenPaintedLighting, renderPixelRatio } from "./render-style.js";
 const startButton = document.getElementById("start");

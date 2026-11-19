@@ -76,7 +76,7 @@ body{
   pointer-events: none;
 }
 #ink{
-  cursor: none;
+  cursor: crosshair;
   touch-action: none;
 }
 #tool-cursor{
@@ -1542,3 +1542,14 @@ html[lang="ko"] #start {font-family:Tahoma,Gulim,'굴림',sans-serif !important;
 
 /* Match the 16px icon column used by every All Programs menu entry. */
 #games-menu .bot-menu-icon {width:16px;height:16px;}
+
+/* Readable XP labels at exhibition desktop distance; mobile keeps its layout. */
+@media (min-width: 900px) and (pointer: fine) {
+ :root{font-size:13px}
+ .desktop-icon span{font-size:13px;max-width:94px}
+ .tool-button span{font-size:12px;line-height:1.25}
+ .tool-button{height:90px}
+ #tools-window{width:320px;max-height:calc(100% - 20px)}
+ .titlebar,.start-footer button,#mines-content .menu button{font-size:13px}
+ #gallery .photo-file span{font-size:13px}
+}

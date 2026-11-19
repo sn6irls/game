@@ -153,7 +153,7 @@
     const now=performance.now(),interval={chalk:100,glitter:240,tap:110,sticker:70,cut:90}[kind];
     if(now-(toolAudioTimes.get(kind)||-1000)<interval)return;
     toolAudioTimes.set(kind,now);
-    if(!ac)ac=window.XPSounds.context;if(ac.state==='suspended')ac.resume();
+    if(!ac)ac=window.XPSounds?.context;if(!ac)return;if(ac.state!=='running'&&ac.state!=='closed')ac.resume().catch(()=>{});
     let buffer=toolAudioCache.get(kind);
     if(!buffer){
       const duration={chalk:.115,glitter:.36,tap:.095,sticker:.055,cut:.14}[kind],sr=ac.sampleRate;
@@ -291,7 +291,7 @@
     cursor.src =
       tool === 'eraser' ? eraserFrames[eraserLevel] || A.tools.eraser : A.tools[tool] || '';
     cursor.className = tool || '';
-    ink.style.cursor = tool === 'jelly' ? 'grab' : !tool || tool === 'stickers' ? 'default' : 'none';
+    ink.style.cursor = tool === 'jelly' ? 'grab' : !tool || tool === 'stickers' ? 'default' : 'crosshair';
     cursor.style.display = 'none';
     if (tool === 'stickers') {
       renderPalette();
@@ -1143,7 +1143,7 @@
     kick();
   }
   function releaseJelly(done) {
-    ink.style.cursor = activeTool === 'jelly' ? 'grab' : activeTool === 'stickers' ? 'default' : 'none';
+    ink.style.cursor = activeTool === 'jelly' ? 'grab' : !activeTool || activeTool === 'stickers' ? 'default' : 'crosshair';
     const j = done.jelly;
     if (!j) return;
     if (done.jellyMoved) {
@@ -2864,6 +2864,8 @@
   );
   ink.addEventListener('pointerdown', startStroke);
   ink.addEventListener('pointermove', moveStroke);
+  ink.addEventListener('pointerenter', moveStroke);
+  window.addEventListener('blur',()=>{endStroke();cursor.style.display='none';});
   ink.addEventListener('pointerup', endStroke);
   ink.addEventListener('pointercancel', endStroke);
   ink.addEventListener('lostpointercapture', endStroke);
@@ -2871,7 +2873,7 @@
     if (!stroke) cursor.style.display = 'none';
   });
   desktop.addEventListener('pointermove', (e) => {
-    if (e.target !== ink) cursor.style.display = 'none';
+    if (e.target !== ink && !stroke) cursor.style.display = 'none';
   });
   desktop.addEventListener('contextmenu', (e) => {
     if (e.target === ink) {

@@ -21,6 +21,12 @@ http
       const requested = decodeURIComponent(
         new URL(req.url, "http://localhost").pathname,
       );
+      if (requested === "/shared/audio.js") {
+        res.setHeader("Content-Type", "text/javascript; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache");
+        return fs.createReadStream(path.resolve(root, "../shared/audio.js"))
+          .on("error", () => { res.writeHead(404); res.end("Not found"); }).pipe(res);
+      }
       file = path.resolve(
         root,
         "." + (requested === "/" ? "/index.html" : requested),

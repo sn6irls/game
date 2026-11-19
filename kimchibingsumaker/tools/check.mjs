@@ -17,12 +17,12 @@ function module(file) {
   execFileSync(process.execPath, ["--check", file]);
   const source = fs.readFileSync(file, "utf8");
   for (const match of source.matchAll(/from\s+["'](\.[^"']+)["']/g))
-    module(path.resolve(path.dirname(file), match[1]));
+    module(path.resolve(path.dirname(file), match[1].split(/[?#]/)[0]));
 }
 module(path.join(root, "src/game.js"));
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 for (const match of html.matchAll(/(?:src|href)="([^"]+)"/g))
-  exists(path.resolve(root, match[1]));
+  exists(path.resolve(root, match[1].split(/[?#]/)[0]));
 const css = fs.readFileSync(path.join(root, "styles/game.css"), "utf8");
 for (const match of css.matchAll(/url\(["']?([^"')]+)["']?\)/g))
   exists(path.resolve(root, "styles", match[1]));

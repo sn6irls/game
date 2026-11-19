@@ -195,3 +195,8 @@ html[lang=ko] .actions #save img,html[lang=ko] .actions #feed img{width:auto;hei
 html[lang=en] .actions{--action-letter-height:min(48px,calc((100vw - 104px) / 6.12))}
 html[lang=en] .actions #save,html[lang=en] .actions #feed{flex:0 0 auto;max-width:none;padding:6px}
 html[lang=en] .actions #save img,html[lang=en] .actions #feed img{width:auto;height:var(--action-letter-height);max-width:none;max-height:none;object-fit:contain}
+
+@media (min-width: 900px) and (pointer: fine) {
+ #picker #pngHint{font-size:17px}
+ #backgroundMessage,#cameraMessage{font-size:16px;line-height:1.6}
+}

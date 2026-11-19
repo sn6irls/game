@@ -25,35 +25,57 @@ export class EyeTracker{
   this.stop();this.enabled=true;this.onState('loading');
   try{
    if(!globalThis.Worker||!globalThis.OffscreenCanvas||!globalThis.createImageBitmap)throw Error();
-   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=23',import.meta.url));
-   this.timer=setTimeout(()=>this.fail(),30000);
-   worker.onerror=()=>{if(this.worker===worker)this.fail();};
+   const worker=this.worker=new Worker(new URL('./eye-worker.js?v=20261119',import.meta.url));
+   this.timer=setTimeout(()=>this.startMain(),15000);
+   worker.onerror=()=>{if(this.worker===worker)this.startMain();};
    worker.onmessage=({data})=>{
     if(this.worker!==worker)return;
     clearTimeout(this.timer);
     if(data.type==='ready'){this.loaded=true;this.onState('on');}
     else if(data.type==='eyes'){
      this.pending=false;this.faces=data.faces||[];this.received=performance.now();
-    }else this.fail();
+    }else this.startMain();
    };
    worker.postMessage({type:'init'});
-  }catch{this.fail();}
+  }catch{this.startMain();}
+ }
+ async startMain(){
+  if(!this.enabled||this.fallbackTried)return;
+  this.fallbackTried=true;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.loaded=false;this.pending=false;
+  const run=this.run;
+  this.timer=setTimeout(()=>{if(this.run===run)this.fail();},30000);
+  try{
+   const {createMainDetector}=await import('./eye-main.js?v=20261119');
+   const detector=await createMainDetector();
+   if(this.run!==run||!this.enabled){detector.close();return;}
+   clearTimeout(this.timer);this.mainDetector=detector;this.loaded=true;this.onState('on');
+  }catch{if(this.run===run)this.fail();}
  }
  fail(){this.stop();this.onState('error');}
  stop(){
-  clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.enabled=false;this.loaded=false;this.pending=false;this.points=null;this.faces=[];this.smoothed=new Map();this.last=0;this.onState('off');
+  this.run=(this.run||0)+1;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;this.mainDetector?.close();this.mainDetector=null;this.fallbackTried=false;this.enabled=false;this.loaded=false;this.pending=false;this.points=null;this.faces=[];this.smoothed=new Map();this.last=0;this.onState('off');
  }
  update(video,time){
-  if(!this.loaded||this.pending||video.readyState<2||time-this.last<50)return;
+  if(!this.loaded||this.pending||video.readyState<2||time-this.last<(this.mainDetector?100:50))return;
   this.last=time;this.pending=true;
   const worker=this.worker;
-  // One small frame in flight: slow phones never accumulate a queue.
-  const scale=Math.min(1,480/Math.max(video.videoWidth,video.videoHeight));
-  createImageBitmap(video,{resizeWidth:Math.max(1,Math.round(video.videoWidth*scale)),resizeHeight:Math.max(1,Math.round(video.videoHeight*scale))}).then(bitmap=>{
+  // Drawing to a small canvas also supports Safari versions that cannot create
+  // an ImageBitmap directly from an HTMLVideoElement or apply bitmap resize options.
+  const scale=Math.min(1,(this.mainDetector?320:480)/Math.max(video.videoWidth,video.videoHeight));
+  if(!this.input){this.input=document.createElement('canvas');this.inputContext=this.input.getContext('2d',{willReadFrequently:true});}
+  const width=Math.max(1,Math.round(video.videoWidth*scale)),height=Math.max(1,Math.round(video.videoHeight*scale));
+  if(this.input.width!==width||this.input.height!==height){this.input.width=width;this.input.height=height;}
+  try{this.inputContext.drawImage(video,0,0,width,height);}catch{this.pending=false;return;}
+  if(this.mainDetector){
+   try{this.faces=this.mainDetector.detect(this.input,time);this.received=performance.now();this.pending=false;}
+   catch{this.fail();}
+   return;
+  }
+  createImageBitmap(this.input).then(bitmap=>{
    if(this.worker!==worker){bitmap.close();return;}
-   this.timer=setTimeout(()=>this.fail(),5000);
+   this.timer=setTimeout(()=>this.startMain(),5000);
    worker.postMessage({type:'frame',bitmap,time},[bitmap]);
-  }).catch(()=>{if(this.worker===worker)this.fail();});
+  }).catch(()=>{if(this.worker===worker)this.startMain();});
  }
  positions(aspect,mirror){
   if(!this.enabled||!this.faces?.length||performance.now()-this.received>300){this.smoothed=new Map();return [];}

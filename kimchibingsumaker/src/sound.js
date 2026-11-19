@@ -10,15 +10,15 @@ export const SOUND_FILES = {
   shaveKimchi: "shavekimchi.MP3",
 };
 const sampleVolumes = {
-  openLid: 1,
-  closeLid: 2.2,
-  putKimchi: 2.4,
-  end: 1,
-  bowlMove: 2.2,
-  bowlReturn: 1.2,
-  sauce1: 1.8,
-  sauce2: 3.4,
-  shaveKimchi: 1.8,
+  openLid: .8,
+  closeLid: .8,
+  putKimchi: .8,
+  end: .8,
+  bowlMove: .8,
+  bowlReturn: .8,
+  sauce1: .8,
+  sauce2: .8,
+  shaveKimchi: .65,
 };
 
 export class Sound {
@@ -53,8 +53,8 @@ export class Sound {
       this.ctx = new C();
       const c = this.ctx;
       this.master = c.createGain();
-      this.master.gain.value = 0.5;
-      this.master.connect(c.destination);
+      this.master.gain.value = 1;
+      this.master.connect(GameAudio.output(c).input);
       this.buffer = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
       const d = this.buffer.getChannelData(0);
       let brown = 0;
@@ -65,7 +65,7 @@ export class Sound {
       this.grinding = this.loop(1800, 1.1);
       this.pouring = this.loop(620, 1.4);
       this.ambient = this.loop(420, 1.8);
-      this.ambient.gain.gain.value = 0.007;
+      this.ambient.gain.gain.value = 0.0035;
       const osc = c.createOscillator(),
         gain = c.createGain();
       osc.type = "sine";
@@ -95,10 +95,10 @@ export class Sound {
         source.connect(gain);
         gain.connect(this.master);
         source.start();
-        this.shaving = { source, gain };
+        this.shaving = { source, gain, level: GameAudio.sampleGain(buffer) };
       });
     }
-    if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+    if (this.ctx.state !== "running" && this.ctx.state !== "closed") this.ctx.resume().catch(() => {});
   }
   loadSample(name) {
     if (!this.loading.has(name)) {
@@ -160,7 +160,7 @@ export class Sound {
       }
       const source = c.createBufferSource(), gain = c.createGain();
       source.buffer = buffer;
-      gain.gain.value = sampleVolumes[name];
+      gain.gain.value = sampleVolumes[name] * GameAudio.sampleGain(buffer);
       source.connect(gain);
       gain.connect(this.master);
       Object.assign(voice, { source, gain });
@@ -230,7 +230,7 @@ export class Sound {
       type === "glass" ? 800 : 65,
       n + 0.13,
     );
-    g.gain.setValueAtTime(type === "glass" ? 0.07 : 0.12, n);
+    g.gain.setValueAtTime(type === "glass" ? 0.035 : 0.06, n);
     g.gain.exponentialRampToValueAtTime(0.0001, n + 0.18);
     o.connect(g);
     g.connect(this.master);
@@ -243,7 +243,7 @@ export class Sound {
       s.buffer = this.buffer;
       f.type = "lowpass";
       f.frequency.value = 1800;
-      gn.gain.setValueAtTime(0.5, n);
+      gn.gain.setValueAtTime(0.25, n);
       gn.gain.exponentialRampToValueAtTime(0.001, n + 0.075);
       s.connect(f);
       f.connect(gn);
@@ -256,29 +256,29 @@ export class Sound {
     if (!this.ctx) return;
     const c = this.ctx,
       n = c.currentTime;
-    this.master.gain.setTargetAtTime(!this.isHidden() ? 0.5 : 0, n, 0.07);
+    this.master.gain.setTargetAtTime(!this.isHidden() ? 1 : 0, n, 0.07);
     this.grinding.gain.gain.setTargetAtTime(
-      grind * 0.35 * (0.65 + 0.35 * Math.sin(this.getTime() * 48) ** 2),
+      grind * 0.175 * (0.65 + 0.35 * Math.sin(this.getTime() * 48) ** 2),
       n,
       0.035,
     );
     this.grinding.filter.frequency.setTargetAtTime(800 + grind * 1900, n, 0.05);
     this.shaving?.gain.gain.setTargetAtTime(
-      grind * sampleVolumes.shaveKimchi, n, 0.04,
+      grind * sampleVolumes.shaveKimchi * (this.shaving?.level || 0), n, 0.04,
     );
-    this.pouring.gain.gain.setTargetAtTime(pour * 0.21, n, 0.04);
+    this.pouring.gain.gain.setTargetAtTime(pour * 0.105, n, 0.04);
     this.pouring.filter.frequency.setTargetAtTime(
       550 + Math.sin(this.getTime() * 14) * 95,
       n,
       0.06,
     );
     this.wet.gain.gain.setTargetAtTime(
-      pour * 0.035 * (0.5 + 0.5 * Math.sin(this.getTime() * 17)),
+      pour * 0.0175 * (0.5 + 0.5 * Math.sin(this.getTime() * 17)),
       n,
       0.035,
     );
     this.ambient.gain.gain.setTargetAtTime(
-      0.007 * (0.9 + 0.1 * Math.sin(this.getTime() * 0.6)),
+      0.0035 * (0.9 + 0.1 * Math.sin(this.getTime() * 0.6)),
       n,
       0.03,
     );

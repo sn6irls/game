@@ -1,6 +1,6 @@
 (()=>{
  'use strict';
- const audio=new Audio('assets/sound/bgm.MP3');audio.loop=true;audio.preload='auto';audio.volume=.16;
+ const audio=new Audio('assets/sound/bgm.MP3');audio.loop=true;audio.preload='auto';audio.volume=1;
  let started=false,blocked=false,muted=false,revision=0;
  try{muted=localStorage.getItem('meal-bgm-muted-release')==='1';}catch{}
  const button=document.getElementById('bgmToggle');

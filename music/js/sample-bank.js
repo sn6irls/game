@@ -21,7 +21,7 @@ export function playOneShot(context,destination,bank,row,at,column,bpm,onended){
  const source=context.createBufferSource(),bus=context.createGain();
  source.buffer=bank[name];source.loop=false;source.playbackRate.value=1;
  const duration=source.buffer.duration;
- const level=typeof row==='string'?.55:[.93,.68,.68,.40,.72][row],release=Math.min(.008,duration/3);
+ const level=GameAudio.sampleGain(source.buffer)*(typeof row==='string'?.65:[.9,.8,.85,.7,.8][row]),release=Math.min(.008,duration/3);
  let envelope=[[at,level],[at+duration-release,level],[at+duration,0]];
  const valueAt=time=>{if(time<=envelope[0][0])return envelope[0][1];for(let i=1;i<envelope.length;i++){const [t1,v1]=envelope[i],[t0,v0]=envelope[i-1];if(time<=t1)return v0+(v1-v0)*Math.max(0,Math.min(1,(time-t0)/Math.max(1e-8,t1-t0)));}return 0;};
  const voice={sources:[source],bus,row,at,end:at+duration,naturalEnd:at+duration,sample:name,cancelled:false,

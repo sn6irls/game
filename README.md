@@ -10,3 +10,5 @@
 슈퍼짱 급식주기 SchoolMeal Demo https://sn6irls.github.io/game/schoolmeal/
 
 평범양의 하교버스 musicgame https://sn6irls.github.io/game/music/
+
+전시용 수정 및 테스트 기록: [EXHIBITION-CHECK.md](EXHIBITION-CHECK.md)

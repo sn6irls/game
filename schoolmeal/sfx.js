@@ -6,18 +6,18 @@
  const stats={last:null,counts:{}};let impactIndex=0;
  function stop(which){for(const key of ['reaction','ui','start','impact','drop'])if(!which||key===which)epochs[key]=(epochs[key]||0)+1;for(const v of [...voices])if(!which||v.mealGroup===which){try{v.stop()}catch{}}}
  function load(key){if(!pending.has(key))pending.set(key,raw.get(key).then(b=>b?ctx.decodeAudioData(b.slice(0)):null).then(b=>{if(b)buffers.set(key,b);return b}).catch(()=>null));return pending.get(key);}
- function unlock(){try{if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.5;const limiter=ctx.createDynamicsCompressor();limiter.threshold.value=-12;limiter.ratio.value=5;master.connect(limiter).connect(ctx.destination);Object.keys(files).forEach(load);}return ctx.resume().catch(()=>{});}catch{return Promise.resolve();}}
+ function unlock(){try{if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=1;master.connect(GameAudio.output(ctx).input);Object.keys(files).forEach(load);}return ctx.resume().catch(()=>{});}catch{return Promise.resolve();}}
  async function sample(key,{volume=.65,rate=1,max=Infinity,bus='reaction'}={}){
   if(!enabled||!ctx)return;const token=epochs[bus]||0,buffer=await load(key);if(document.hidden)return;await ctx.resume().catch(()=>{});
   if(!buffer||!ready()||token!==(epochs[bus]||0))return;
-  const source=ctx.createBufferSource(),gain=ctx.createGain(),at=ctx.currentTime+.005,duration=Math.min(buffer.duration/rate,max);
+  volume*=GameAudio.sampleGain(buffer);const source=ctx.createBufferSource(),gain=ctx.createGain(),at=ctx.currentTime+.005,duration=Math.min(buffer.duration/rate,max);
   source.buffer=buffer;source.playbackRate.value=rate;gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(volume,at+.008);gain.gain.setValueAtTime(volume,at+Math.max(.009,duration-.07));gain.gain.linearRampToValueAtTime(0,at+duration);
   source.connect(gain).connect(master);source.mealGroup=bus;track(source,[gain],at,at+duration);mark('sample-'+key);
  }
  function ready(){return enabled&&ctx?.state==='running'&&!document.hidden;}
  function track(source,nodes,at,end){source.mealGroup=source.mealGroup||group;voices.add(source);source.onended=()=>{voices.delete(source);source.disconnect();nodes.forEach(n=>n.disconnect());};source.start(at);source.stop(end);}
  function ramp(param,values,at,duration){param.setValueAtTime(values[0],at);for(let i=1;i<values.length;i++)param.linearRampToValueAtTime(values[i],at+duration*i/(values.length-1));}
- function envelope(gain,at,duration,volume){gain.setValueAtTime(0,at);gain.linearRampToValueAtTime(volume,at+Math.min(.025,duration*.2));gain.exponentialRampToValueAtTime(.0001,at+duration);}
+ function envelope(gain,at,duration,volume){volume*=.5;gain.setValueAtTime(0,at);gain.linearRampToValueAtTime(volume,at+Math.min(.025,duration*.2));gain.exponentialRampToValueAtTime(.0001,at+duration);}
  function tone(freq,duration,volume=.15,delay=0,type='sine',vibrato=0){const at=ctx.currentTime+.01+delay,o=ctx.createOscillator(),g=ctx.createGain();o.type=type;ramp(o.frequency,freq,at,duration);envelope(g.gain,at,duration,volume);o.connect(g).connect(master);const nodes=[g];if(vibrato){const lfo=ctx.createOscillator(),depth=ctx.createGain();lfo.frequency.value=11;depth.gain.value=vibrato;lfo.connect(depth).connect(o.frequency);track(lfo,[depth],at,at+duration+.02);}track(o,nodes,at,at+duration+.02);}
  // Formant-filtered cartoon syllables, not recorded speech.
  function vowel(pitches,duration,formants,volume=.45,delay=0,wobble=0){const at=ctx.currentTime+.01+delay,o=ctx.createOscillator(),g=ctx.createGain();o.type='sawtooth';ramp(o.frequency,pitches,at,duration);envelope(g.gain,at,duration,volume);g.connect(master);const nodes=[g];for(const [i,values] of formants.entries()){const f=ctx.createBiquadFilter(),level=ctx.createGain();f.type='bandpass';f.Q.value=i?5:3;ramp(f.frequency,values,at,duration);level.gain.value=i?.38:1;o.connect(f).connect(level).connect(g);nodes.push(f,level);}if(wobble){const lfo=ctx.createOscillator(),depth=ctx.createGain();lfo.frequency.value=6;depth.gain.value=wobble;lfo.connect(depth).connect(o.frequency);track(lfo,[depth],at,at+duration+.02);}track(o,nodes,at,at+duration+.03);}

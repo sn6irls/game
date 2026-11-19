@@ -1,5 +1,5 @@
-import {EyeTracker} from './eye-tracker.js?v=23';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=23';
+import {EyeTracker} from './eye-tracker.js?v=20261119';
+import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=20261119';
 import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=11';
 const samsungPhone=detectSamsungPhone(navigator);
 const $=id=>document.getElementById(id);
@@ -151,7 +151,7 @@ async function openCamera(){
  if(gl?.isContextLost()){location.reload();return;}
  eyeTracker.stop();
  const attempt=++cameraAttempt;
- status.classList.remove('error');busy=true;ready=false;controls();$('start').disabled=true;$('start').textContent='start';message('카메라 권한을 허용해주세요.');
+ status.classList.remove('error');busy=true;ready=false;controls();$('start').disabled=true;$('start').textContent='카메라 연결 중…';message('카메라 권한을 허용해주세요.');
  stream?.getTracks().forEach(t=>t.stop());stream=null;
  try{
   if(!window.isSecureContext)throw Error('보안 연결이 필요해요. HTTPS 촬영 주소로 열어주세요.');
@@ -162,13 +162,13 @@ async function openCamera(){
   const playback=bounded(frame.play(),12000,'프레임 영상 로딩이 늦어지고 있어요. 연결 확인 후 다시 눌러주세요.').then(()=>null,e=>Error(e.name==='NotAllowedError'?'영상 재생이 차단됐어요. 촬영하기를 다시 눌러주세요.':e.message));
   const samsung=await samsungPhone;
   if(attempt!==cameraAttempt)return;
-  const request=navigator.mediaDevices.getUserMedia(cameraConstraints(facing,samsung)).then(value=>{if(attempt!==cameraAttempt){value.getTracks().forEach(t=>t.stop());throw Error('취소된 촬영');}return value;});
+  const request=navigator.mediaDevices.getUserMedia(cameraConstraints(facing,samsung)).catch(error=>{if(error.name!=='OverconstrainedError'||attempt!==cameraAttempt)throw error;return navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing}}});}).then(value=>{if(attempt!==cameraAttempt){value.getTracks().forEach(t=>t.stop());throw Error('취소된 촬영');}return value;});
   const acquired=await bounded(request,20000,'카메라 응답을 기다리지 못했어요. 권한을 확인하고 다시 눌러주세요.');
   if(attempt!==cameraAttempt){acquired.getTracks().forEach(t=>t.stop());return;}
   stream=acquired;const track=stream.getVideoTracks()[0];const zoom=track.getCapabilities?.().zoom;
   if(zoom){try{await bounded(track.applyConstraints({advanced:[{zoom:cameraZoom(zoom,samsung,track.getSettings().facingMode||facing)}]}),1500,'');}catch{}}
   if(attempt!==cameraAttempt)return;
-  mirror=(track.getSettings().facingMode||facing)==='user';camera.srcObject=stream;
+  mirror=(track.getSettings().facingMode||facing)==='user';camera.muted=true;camera.defaultMuted=true;camera.playsInline=true;camera.srcObject=stream;
   await bounded(camera.play(),10000,'카메라 재생을 시작하지 못했어요. 다시 눌러주세요.');
   const playbackError=await playback;if(playbackError)throw playbackError;
   await bounded(new Promise((resolve,reject)=>{function check(){if(attempt!==cameraAttempt){reject(Error('취소된 촬영'));return;}if(camera.videoWidth>16&&camera.videoHeight>16&&camera.readyState>=2&&frame.readyState>=2){resolve();return;}setTimeout(check,100);}check();}),10000,'화면을 받지 못했어요. 다시 눌러주세요.');
@@ -177,7 +177,7 @@ async function openCamera(){
   ready=true;enableLens();$('welcome').hidden=true;$('start').textContent='start';status.classList.remove('error');message('');
  }catch(e){
   if(attempt!==cameraAttempt)return;
-  cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;
+  cameraAttempt++;frame.pause();stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;
   const texts={NotAllowedError:'카메라 권한이 차단되어 있어요. 주소창의 사이트 설정과 휴대폰·PC 설정에서 카메라를 허용한 후 다시 눌러주세요.',SecurityError:'이 화면에서 카메라 접근이 제한되어 있어요. 브라우저 안내를 확인해주세요.',NotFoundError:'연결된 카메라가 없어요. 카메라 연결 후 다시 눌러주세요.',NotReadableError:'카메라를 다른 앱이 사용 중이거나 기기 설정에서 차단했어요. 확인 후 다시 눌러주세요.',OverconstrainedError:'이 카메라 설정을 사용할 수 없어요. 다른 카메라로 다시 시도해주세요.'};
   fail(texts[e.name]||e.message);busy=false;controls();
  }finally{if(attempt===cameraAttempt){busy=false;controls();$('start').disabled=false;}}
