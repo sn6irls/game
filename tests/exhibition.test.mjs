@@ -6,6 +6,19 @@ const clockSource=fs.readFileSync(new URL('../music/js/playback-clock.js',import
 const {playbackTime}=await import('data:text/javascript;base64,'+Buffer.from(clockSource).toString('base64'));
 const scope={};vm.runInNewContext(fs.readFileSync(new URL('../shared/audio.js',import.meta.url),'utf8'),scope);
 const {sampleGain,measure}=scope.GameAudio;
+const cameraSource=fs.readFileSync(new URL('../frame/camera-settings.js',import.meta.url),'utf8');
+const {cameraConstraints}=await import('data:text/javascript;base64,'+Buffer.from(cameraSource).toString('base64'));
+test('desktop webcams use a native landscape request without a hard frame-rate constraint',()=>{
+ const desktop=cameraConstraints('user',false,true);
+ assert.equal(desktop.audio,false);
+ assert.deepEqual(desktop.video.width,{ideal:1280});
+ assert.deepEqual(desktop.video.height,{ideal:720});
+ assert.equal(desktop.video.frameRate,undefined);
+ assert.equal(desktop.video.aspectRatio,undefined);
+ const mobile=cameraConstraints('user',false);
+ assert.deepEqual(mobile.video.aspectRatio,{ideal:.75});
+ assert.deepEqual(mobile.video.frameRate,{ideal:24,max:30});
+});
 test('valid output timestamps retain audio/visual synchronization',()=>{
  assert.equal(playbackTime({currentTime:10,getOutputTimestamp:()=>({contextTime:9.9,performanceTime:1000})},1050),9.950000000000001);
 });
