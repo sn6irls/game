@@ -164,6 +164,13 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 #play-actions #play-again:hover,#play-actions #play-again:focus-visible{animation:none;opacity:1}
 @media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
 
+#prize-caption{position:fixed;left:50%;top:var(--prize-caption-top,73%);transform:translateX(-50%);z-index:12;width:min(620px,86vw);margin:0;padding:8px 12px;border:0;border-radius:0;background:none;box-shadow:none;color:#fff;text-align:center;font-family:GachaPixel,monospace;text-shadow:2px 2px #000,-1px -1px #000;transition:none}
+#prize-caption:hover{transform:translateX(-50%);background:none}
+#prize-caption:disabled{opacity:1;cursor:default}
+#preview-grade{display:block;font:400 clamp(13px,1.3vw,18px)/1.5 GachaPixel,monospace;letter-spacing:2px;margin-bottom:6px;color:#e4e4e4}
+#preview-name{display:block;font:400 clamp(21px,2.2vw,30px)/1.4 GachaPixel,monospace;word-break:keep-all;overflow-wrap:anywhere}
+#prize-caption:focus-visible{outline:2px dotted white;outline-offset:4px}
+
 @media (min-width: 900px) and (pointer: fine) {
  .drawn-ui #speech-text{font-size:clamp(20px,calc(var(--bubble-font,20px) * 1.2),24px)}
  #coin-tap{font-size:20px}

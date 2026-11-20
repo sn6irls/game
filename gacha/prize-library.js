@@ -19,13 +19,14 @@ export const PRIZES=[
  {id:'gum',rarity:'R',ko:'장난감 껌',en:'Prank chewing gum'},
  {id:'book',rarity:'R',ko:'문방구 공포책',en:'Corner-shop horror book'},
  {id:'glue',rarity:'R',ko:'반짝이풀',en:'Glitter glue'},
+ {id:'meju',rarity:'R',ko:'메주',en:'Meju'},
  {id:'mini',rarity:'SR',ko:'슈퍼짱미니피규어',en:'Mini Super-chan figure'},
  {id:'angel',rarity:'SSR',ko:'천사의 주방장 · 소라',en:'Angel Chef · Sora'}
 ];
 
 // Build only the prize that is drawn. Collection thumbnails and their offscreen
 // renderer are also lazy, so none of this blocks the first playable frame.
-export function createPrizeLibrary(receipt,ssr,trashAtlas,normalAtlas){
+export function createPrizeLibrary(receipt,ssr,trashAtlas,normalAtlas,mejuImage){
  let renderer;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.01,20);camera.position.set(0,.6,4.3);camera.lookAt(0,0,0);
  const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(-3,5,5);scene.add(light,new THREE.HemisphereLight(0xffffff,0x81766a,1.8));
@@ -37,6 +38,7 @@ export function createPrizeLibrary(receipt,ssr,trashAtlas,normalAtlas){
   const still=document.createElement('canvas');still.width=still.height=384;still.getContext('2d').drawImage(renderer.domElement,0,0);scene.remove(group);return still;
  }
  const models=new Map(),thumbs=new Map(),stills=new Map();
+ const meju=document.createElement('canvas');meju.width=mejuImage.width;meju.height=mejuImage.height;meju.getContext('2d').drawImage(mejuImage,0,0);stills.set('meju',meju);
  function getStill(id){
   if(!stills.has(id))stills.set(id,TRASH_CROPS[id]?cropTrash(trashAtlas,id):NORMAL_CROPS[id]?cropNormal(normalAtlas,id):photograph(id==='receipt'?receipt:ssr));
   return stills.get(id);

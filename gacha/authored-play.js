@@ -8,7 +8,8 @@ import {CapsuleDrop,SmoothRotation,rewardPop,hatchOpening,HATCH_DURATION,HATCH_C
 import {CapsulePhysics} from './capsule-physics.js';
 import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
-import {PRIZES,createPrizeLibrary} from './prize-library.js?v=fast-load';
+import {PRIZES,createPrizeLibrary} from './prize-library.js?v=prize-presentation';
+import {createGameAudio} from './game-audio.js';
 import {reactionFor,dialogueText} from './reward-reactions.js';
 import {applyFaceFrame} from './face-atlas.js';
 import {captureGameFrame} from './capture-game.js';
@@ -16,9 +17,10 @@ import {installDrawnUI,syncDrawnUI,BUBBLES} from './handdrawn-ui.js';
 import {floorFootprint} from './scene-colliders.js';
 import {createContactShadows} from './contact-shadows.js';
 import {installMachinePrice} from './machine-price.js';
-import {createCoinMechanism,COIN_CONTACT_TIME} from './coin-mechanism.js';
+import {createCoinMechanism} from './coin-mechanism.js';
 
 installDrawnUI();
+const gameAudio=createGameAudio();
 
 const $=s=>document.querySelector(s),clamp=THREE.MathUtils.clamp,lerp=THREE.MathUtils.lerp;
 const canvas=$('#world'),renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
@@ -27,11 +29,11 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoTone
 renderer.localClippingEnabled=true;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 const loader=new GLTFLoader(),scene=new THREE.Scene();scene.background=new THREE.Color('#171c34');
-let loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture;
+let loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture,mejuImage;
 try{
- [loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture]=await Promise.all([
+ [loaded,ssrLoaded,capsuleMesh,capsuleTexture,floorCapsuleMesh,coinLoaded,trashAtlas,normalAtlas,faceTexture,mejuImage]=await Promise.all([
   loadModel(loader,'./asset/scene-web.glb'),loadModel(loader,'./asset/ssr-lowpoly.glb'),
-  fetch('./asset/capsule-mesh.json').then(r=>r.json()),new THREE.TextureLoader().loadAsync('./asset/capsule-photo.png'),fetch('./asset/capsule-floor-mesh.json').then(r=>r.json()),loader.loadAsync('./asset/user-coin.glb'),new THREE.ImageLoader().loadAsync('./asset/trash.webp'),new THREE.ImageLoader().loadAsync('./asset/normal.webp'),new THREE.TextureLoader().loadAsync('./asset/face.webp')
+  fetch('./asset/capsule-mesh.json').then(r=>r.json()),new THREE.TextureLoader().loadAsync('./asset/capsule-photo.png'),fetch('./asset/capsule-floor-mesh.json').then(r=>r.json()),loader.loadAsync('./asset/user-coin.glb'),new THREE.ImageLoader().loadAsync('./asset/trash.webp'),new THREE.ImageLoader().loadAsync('./asset/normal.webp'),new THREE.TextureLoader().loadAsync('./asset/face.webp'),new THREE.ImageLoader().loadAsync('./asset/meju.webp')
  ]);
 }catch(error){$('#scene-error').hidden=false;$('#scene-error').textContent='장면을 불러오지 못했어요. 새로고침해 주세요.';throw error;}
 const authored=loaded.scene;scene.add(authored,ssrLoaded.scene);
@@ -108,7 +110,7 @@ let customSSR=null,customThumb=null;
 const commonPivot=new THREE.Group();new THREE.Box3().setFromObject(trash).getCenter(commonPivot.position);scene.add(commonPivot);commonPivot.attach(trash);trash.visible=false;
 const handLift=.04,handBaseY=new THREE.Box3().setFromObject(trash).min.y+handLift;
 rewardPivot.position.y+=handLift;commonPivot.position.y+=handLift;
-const library=createPrizeLibrary(trash,ssr,trashAtlas,normalAtlas);
+const library=createPrizeLibrary(trash,ssr,trashAtlas,normalAtlas,mejuImage);
 let currentPrize=null,misses=0,pity=false,capsuleColor=0,lineKind='idle',lineIndex=0,reactionEmotion='neutral';
 const owned=new Map();
 function currentModel(){
@@ -138,13 +140,16 @@ const liftStart=new THREE.Vector3();let liftStartScale=.1;
 let capsuleScale=1;
 function fitReveal(){
  const tanHalf=Math.tan(THREE.MathUtils.degToRad(revealCamera.fov/2)),distance=revealCamera.position.z;
- capsuleScale=distance*Math.sin(Math.atan(tanHalf*Math.min(1,revealCamera.aspect)*.68))/.91;
+ const diameter=Math.min(Math.min(view.width,view.height)*.60,480);
+ capsuleScale=distance*Math.sin(Math.atan(tanHalf*diameter/view.height))/.91;
  exhibit.scale.setScalar(capsuleScale*(exhibit.userData.zoom??1));
  const size=prizePreview.userData.size;if(!size)return;
  // Leave room around the reward, including its depth and the pop overshoot.
- const limitX=tanHalf*revealCamera.aspect*.64,limitY=tanHalf*.54;
+ const limitX=tanHalf*revealCamera.aspect*Math.min(.64,520/view.width),limitY=tanHalf*Math.min(.42,400/view.height);
  prizePreview.userData.scale=distance*Math.min(limitX/(size.x/2+limitX*size.z/2),limitY/(size.y/2+limitY*size.z/2))/1.03;
  if(prizePreview.visible)prizePreview.scale.setScalar(prizePreview.userData.scale);
+ const scale=prizePreview.userData.scale,height=size.y*scale/(distance-size.z*scale/2)/tanHalf*view.height/2;
+ document.documentElement.style.setProperty('--prize-caption-top',`${view.height/2+height/2+Math.min(30,Math.max(18,view.height*.025))}px`);
 }
 function rebuildPreview(){prizePreview.clear();const clone=(currentModel()||customSSR||ssr).clone(true);clone.visible=true;clone.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(clone),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());clone.position.sub(center);prizePreview.add(clone);prizePreview.userData.size=size;fitReveal();}
 rebuildPreview();
@@ -213,6 +218,10 @@ const rewardInfo=document.createElement('div');rewardInfo.id='reward-info';rewar
 const resultButtons=document.createElement('div');resultButtons.className='result-buttons';
 const again=document.createElement('button');again.id='play-again';resultButtons.append(again,$('#save-photo'));actions.append(rewardInfo,resultButtons);document.body.append(actions);
 const resultState=()=>state==='result'||state==='won';
+const previewCaption=document.createElement('button');previewCaption.id='prize-caption';previewCaption.type='button';previewCaption.hidden=true;previewCaption.setAttribute('aria-live','polite');previewCaption.innerHTML='<small id="preview-grade"></small><strong id="preview-name"></strong>';document.body.append(previewCaption);
+previewCaption.onclick=()=>{if(state==='revealed')showResult();};
+const focusedState=()=>['zooming','capsule','opening','revealed'].includes(state);
+let rewardAnnounced=false;
 const bubbleKind=()=>state==='won'?'emphasis':resultState()?'speaking':'thought';
 const gradeName=rarity=>({ko:{N:'쓰레기',R:'평범',SR:'평범',SSR:'슈퍼레어'},en:{N:'TRASH',R:'ORDINARY',SR:'ORDINARY',SSR:'SUPER RARE'}}[lang][rarity]);
 function syncUI(){
@@ -227,20 +236,21 @@ function syncUI(){
  $('#drawer .close').setAttribute('aria-label',lang==='ko'?'닫기':'Close');
  $('#coin-label').textContent=lang==='ko'?'동전 넣기':'INSERT COIN';
  $('#reward-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#reward-name').textContent=currentPrize?.[lang]||'';
+ $('#preview-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#preview-name').textContent=currentPrize?.[lang]||'';
+ previewCaption.hidden=state!=='revealed';previewCaption.disabled=state!=='revealed';previewCaption.setAttribute('aria-label',`${currentPrize?.[lang]||''}. ${lang==='ko'?'클릭해서 슈퍼짱에게 건네기':'Click to give to Super-chan'}`);
  actions.hidden=!resultState();again.setAttribute('aria-label',lang==='ko'?(state==='won'?'처음부터 다시':'다시 뽑기'):(state==='won'?'Start over':'Try again'));
 }
-function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=['zooming','capsule','opening'].includes(state);document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
+function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=focusedState();document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
 setFace(1);
-let audio;
-function tone(hz,duration=.08,delay=0){try{audio??=new AudioContext();audio.resume();const oscillator=audio.createOscillator(),gain=audio.createGain(),now=audio.currentTime+delay;oscillator.type='triangle';oscillator.frequency.setValueAtTime(hz,now);gain.gain.setValueAtTime(.055,now);gain.gain.exponentialRampToValueAtTime(.001,now+duration);oscillator.connect(gain);gain.connect(audio.destination);oscillator.start(now);oscillator.stop(now+duration);}catch{}}
-function insertCoin(){if(state!=='ready'||coinCredit)return;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();progress=0;transition('inserting');tone(1450,.045);navigator.vibrate?.(12);}
+const tone=(hz,duration=.08,delay=0)=>gameAudio.tick(hz,duration,delay);
+function insertCoin(){if(state!=='ready'||coinCredit)return;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();progress=0;transition('inserting');gameAudio.play('coin');navigator.vibrate?.(12);}
 $('#coin-tap').onclick=insertCoin;
 function draw(){
  if(state!=='ready'||!coinCredit)return;coinCredit=false;coinRig.coin.visible=false;count++;progress=0;bounceCount=0;dropCorrection=0;ballLaunched=false;rolling.visible=false;setFace(1);blinkEnd=0;
  const outcome=rollWithPity(DEFAULT_ODDS,misses,PITY_LIMIT);misses=outcome.misses;pity=outcome.pity;currentPrize=pickPrize(PRIZES,outcome.rarity);
  capsuleColor=randomCapsuleColor();hideRewards();commonPivot.rotation.set(0,0,0);rewardPivot.rotation.set(0,0,0);rebuildPreview();
  speechDismissed=true;look.setColor(rolling,capsuleColor);look.setColor(reveal,capsuleColor);
- transition('dispensing');tone(350);navigator.vibrate?.(25);
+ gameAudio.stopCrank();rewardAnnounced=false;transition('dispensing');navigator.vibrate?.(25);
 }
 function chooseLanding(){
  dropStyle=(lastDropStyle+1+Math.floor(Math.random()*2))%dropProfiles.length;lastDropStyle=dropStyle;
@@ -279,7 +289,7 @@ function updateDispense(dt){
  if(ballLaunched){
   const previousBounces=bounceCount;drop.update(dt);bounceCount=drop.bounces;
   rolling.position.set(drop.x,drop.y,drop.z);rollVelocity.set(drop.vx,drop.vy,drop.vz);rolling.rotation.set(drop.rx,0,drop.rz);
-  if(bounceCount>previousBounces){if(previousBounces===0){tone(115,.11);tone(230,.035,.008);const hit=drop.impacts[0];firstLanding.set(hit.x,hit.y,hit.z);navigator.vibrate?.(30);}else tone(180+bounceCount*22,.045);}
+  if(bounceCount>previousBounces){if(previousBounces===0){gameAudio.play('drop');const hit=drop.impacts[0];firstLanding.set(hit.x,hit.y,hit.z);navigator.vibrate?.(30);}else tone(180+bounceCount*22,.045);}
  }
  if(ballLaunched&&age>=HATCH_DURATION&&(drop.settled||(age>=3.4&&bounceCount>=2))){closeHatch();rollEnd.copy(rolling.position);prepareCapsule();}
 }
@@ -295,8 +305,9 @@ function prepareCapsule(){
  reveal.userData.top.scale.setScalar(1);reveal.userData.bottom.scale.setScalar(1);
  transition('zooming');
 }
-function openCapsule(){if(state!=='capsule')return;exhibit.rotation.set(0,0,0);prizePreview.rotation.set(0,0,0);transition('opening');tone(450,.12);tone(800,.1,.08);}
+function openCapsule(){if(state!=='capsule')return;exhibit.rotation.set(0,0,0);prizePreview.rotation.set(0,0,0);transition('opening');gameAudio.play('open');}
 function showResult(){
+ if(state!=='revealed')return;
  closeHatch();
  exhibit.visible=false;prizePreview.visible=false;hideRewards();currentModel().visible=true;
  const rare=currentPrize.rarity==='SSR';owned.set(currentPrize.id,(owned.get(currentPrize.id)||0)+1);
@@ -304,7 +315,6 @@ function showResult(){
  setFace(reaction.face);currentPivot().rotation.set(0,0,0);rewardMotion.reset();
  keepRewardAboveHands();
  addBall(rollEnd,{x:0,y:0,z:0},capsuleColor);speechDismissed=false;transition(rare?'won':'result');
- if(rare){tone(523,.18);tone(659,.2,.12);tone(784,.28,.24);}else{tone(392,.12);tone(330,.13,.14);tone(220,.24,.28);}
 }
 let discarded=null;
 function readyAgain(){hideRewards();currentPrize=null;lineKind='idle';lineIndex=0;reactionEmotion='neutral';progress=0;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;speechDismissed=false;transition('ready');}
@@ -347,6 +357,7 @@ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{
  if(modal())return;pointerRay(e);canvas.setPointerCapture(e.pointerId);lastFloor=null;
  const start={x:e.clientX,y:e.clientY,time:e.timeStamp,total:0};
+ if(state==='revealed'){if(e.button===0)drag={...start,type:'advance'};return;}
  if(e.button===1&&!['inserting','dispensing','zooming','capsule','opening'].includes(state)){e.preventDefault();drag={...start,type:'orbit'};return;}
  if(state==='ready'){
   const c=knobCenter(),coinPoint=projected(coinRig.coin.position);
@@ -373,18 +384,20 @@ canvas.addEventListener('pointermove',e=>{
  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.total+=Math.abs(dx)+Math.abs(dy);
  if(drag.type==='knob'&&state==='ready'){
   const c=drag.center,angle=Math.atan2(e.clientY-c.y,e.clientX-c.x),delta=angleDelta(angle,drag.angle);drag.angle=angle;
-  if(Math.abs(delta)<.9){if(Math.abs(delta)>.004){speechDismissed=true;document.body.classList.add('speech-dismissed');}progress+=delta;knobAngle-=delta;knobPivot.quaternion.setFromAxisAngle(knobAxis,knobAngle);if(Math.floor(Math.abs(progress)*5)!==Math.floor(Math.abs(progress-delta)*5))tone(200,.025);if(Math.abs(progress)>=6.1){drag=null;draw();return;}}
+  if(Math.abs(delta)<.9){if(Math.abs(delta)>.004){gameAudio.crank();speechDismissed=true;document.body.classList.add('speech-dismissed');}progress+=delta;knobAngle-=delta;knobPivot.quaternion.setFromAxisAngle(knobAxis,knobAngle);if(Math.abs(progress)>=6.1){drag=null;draw();return;}}
  }else if(rotationControls[drag.type]){rotationControls[drag.type].move(dx,dy,(e.timeStamp-drag.time)/1000);}
  else if(drag.type==='ball'&&floorHit(e))physics.moveGrab(floorPoint.x*10,floorPoint.z*10);
  else if(drag.type==='orbit'){manualOrbit.x=clamp(manualOrbit.x-dx*.0025,-.25,.25);manualOrbit.y=clamp(manualOrbit.y-dy*.002,-.14,.14);}
  drag.x=e.clientX;drag.y=e.clientY;drag.time=e.timeStamp;
 });
 canvas.addEventListener('pointerup',e=>{
+ gameAudio.stopCrank();
  rotationControls[drag?.type]?.release();
- if(drag?.total<10){if(drag.type==='coin')insertCoin();else if(drag.type==='capsule')openCapsule();else if(drag.type==='reward')rewardMotion.yaw+=Math.PI/6;}
+ if(drag?.total<10){if(drag.type==='coin')insertCoin();else if(drag.type==='capsule')openCapsule();else if(drag.type==='reward')rewardMotion.yaw+=Math.PI/6;else if(drag.type==='advance')showResult();}
  drag=null;physics.release();if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
 });
-canvas.addEventListener('pointercancel',()=>{rotationControls[drag?.type]?.release();drag=null;physics.release();lastFloor=null;});
+canvas.addEventListener('pointercancel',()=>{gameAudio.stopCrank();rotationControls[drag?.type]?.release();drag=null;physics.release();lastFloor=null;});
+addEventListener('keydown',e=>{if(!e.repeat&&!modal()&&state==='revealed'&&['Enter',' '].includes(e.key)){e.preventDefault();showResult();}});
 canvas.addEventListener('pointerleave',()=>{if(!drag)pointerTarget.set(0,0);lastFloor=null;lastHover=null;});
 const guide=$('#gesture-guide');
 function updateGuide(){
@@ -454,8 +467,8 @@ async function importPrize(file){
 let previous=performance.now();
 function frame(now){
  requestAnimationFrame(frame);const dt=Math.min(.05,(now-previous)/1000);previous=now;elapsed+=dt;age+=dt;guideAge+=dt;
- const focus=['dispensing','zooming','capsule','opening'].includes(state);
- const nextPull=['zooming','capsule','opening'].includes(state)?1:0;
+ const focus=state==='dispensing'||focusedState();
+ const nextPull=focusedState()?1:0;
  if(nextPull!==pullTo){pullFrom=cameraPull;pullTo=nextPull;pullAge=0;}pullAge+=dt;
  cameraPull=lerp(pullFrom,pullTo,THREE.MathUtils.smootherstep(pullAge,0,.7));
  if(!modal()){
@@ -469,7 +482,6 @@ function frame(now){
  }
  if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);
  else if(state==='inserting'){
-  if(age>=COIN_CONTACT_TIME&&age-dt<COIN_CONTACT_TIME){tone(830,.035);tone(1160,.045,.055);tone(1700,.10,.11);}
   if(coinRig.insert(age,camera)){coinCredit=true;spent+=4000;transition('ready');navigator.vibrate?.([12,20,16]);}
  }else coinRig.coin.visible=false;
  if(state==='dispensing')updateDispense(dt);
@@ -478,7 +490,9 @@ function frame(now){
   const split=THREE.MathUtils.smootherstep(age,.04,.95);reveal.userData.top.position.y=split*3;reveal.userData.bottom.position.y=-split*3;reveal.userData.seam.visible=split<.015;
   reveal.userData.top.scale.setScalar(1-split*.08);reveal.userData.bottom.scale.setScalar(1-split*.08);
   const popAge=Math.max(0,age-.23);prizePreview.visible=popAge>0;prizePreview.position.set(0,-.12*(1-THREE.MathUtils.smootherstep(popAge,0,.8)),0);prizePreview.scale.setScalar(prizePreview.userData.scale*rewardPop(popAge));
-  if(age>=1.05)showResult();
+  previewCaption.hidden=!prizePreview.visible;
+  if(prizePreview.visible&&!rewardAnnounced){rewardAnnounced=true;gameAudio.play(currentPrize.rarity==='SSR'?'ssr':currentPrize.rarity==='N'?'trash':'ordinary');}
+  if(age>=1.05){exhibit.visible=false;prizePreview.position.set(0,0,0);prizePreview.scale.setScalar(prizePreview.userData.scale);transition('revealed');}
  }
  if(state==='capsule')capsuleMotion.step(dt,exhibit.rotation);
  if(resultState()){rewardMotion.step(dt,currentPivot().rotation);keepRewardAboveHands();}
@@ -490,17 +504,19 @@ function frame(now){
  flashStrength=state==='resetting'?Math.sin(clamp(age/.45,0,1)*Math.PI):state==='opening'?THREE.MathUtils.smoothstep(age,.13,.21)*(1-THREE.MathUtils.smoothstep(age,.21,.77)):0;
  flash.style.opacity=String(flashStrength*(reduced.matches?.35:1));flash.style.transform=`scale(${.8+clamp((age-.13)/.64,0,1)*.5})`;
  syncBalls(dt);updateContactShadows();updateGuide();updateSpeech();
- const focused=['zooming','capsule','opening'].includes(state);
+ const focused=focusedState();
  compositor.render(scene,camera,overlay,revealCamera,focused,dt,!reduced.matches&&cameraPull<.9999,reduced.matches);
 }
 document.body.classList.add('authored-game','spatial-game');$('#reveal-ui').hidden=true;
 canvas.tabIndex=0;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;transition('ready');
 requestAnimationFrame(now=>{
  frame(now);document.body.classList.remove('scene-pending');$('#scene-loading').hidden=true;document.body.removeAttribute('aria-busy');
+ gameAudio.preload();
  // The focus effect is not used until a pull. Compile it without delaying play.
  const idle=globalThis.requestIdleCallback||((fn)=>setTimeout(fn,50));idle(()=>{compositor.warmup().catch(()=>{});},{timeout:1500});
 });
 if(new URLSearchParams(location.search).has('qa'))window.gachaDiagnostics=()=>({
+ sound:gameAudio.stats(),previewName:$('#preview-name').textContent,previewCaption:!previewCaption.hidden,heldVisible:!!currentModel()?.visible,
  reaction:{kind:lineKind,index:lineIndex,emotion:reactionEmotion,bubble:bubbleKind()},
  coinFacing:Math.abs(coinRig.coin.quaternion.dot(camera.quaternion)),coinScale:coinRig.coin.scale.x,
  state,age,expression,faceOffset:faceMaterial.map.offset.toArray(),faceRepeat:faceMaterial.map.repeat.toArray(),count,spent,coinCredit,coinVisible:coinRig.coin.visible,coinPoint:projected(coinRig.coin.position),coinPosition:coinRig.coin.position.toArray(),coinSlot:coinRig.slot.toArray(),ssrAsset:'ssr-lowpoly.glb',odds:DEFAULT_ODDS,misses,pity,prize:currentPrize,owned:Object.fromEntries(owned),cursorHidden:getComputedStyle(canvas).cursor==='none',
