@@ -53,3 +53,13 @@ nav svg{width:28px;height:28px;shape-rendering:crispEdges}.pixel{fill:currentCol
  .save-buttons a{width:64px;height:60px}
  .save-buttons svg{width:34px;height:34px}
 }
+
+/* Larger touch controls on tablets; the short edge excludes landscape phones. */
+@media (min-width: 600px) and (min-height: 600px) and (pointer: coarse) {
+ nav button{width:60px;height:60px}
+ nav svg{width:33px;height:33px}
+ #shutter{width:76px;height:76px}
+ .save-buttons{grid-template-columns:1fr 60px 1fr}
+ .save-buttons a{width:60px;height:56px}
+ .save-buttons svg{width:31px;height:31px}
+}
