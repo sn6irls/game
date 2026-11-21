@@ -17,7 +17,7 @@ test('desktop webcams use a native landscape request without a hard frame-rate c
  assert.equal(desktop.video.aspectRatio,undefined);
  const mobile=cameraConstraints('user',false);
  assert.deepEqual(mobile.video.aspectRatio,{ideal:.75});
- assert.deepEqual(mobile.video.frameRate,{ideal:24,max:30});
+ assert.deepEqual(mobile.video.frameRate,{ideal:24});
 });
 test('valid output timestamps retain audio/visual synchronization',()=>{
  assert.equal(playbackTime({currentTime:10,getOutputTimestamp:()=>({contextTime:9.9,performanceTime:1000})},1050),9.950000000000001);

@@ -215,3 +215,6 @@ html[lang=en] .actions #save img,html[lang=en] .actions #feed img{width:auto;hei
  #backgroundMessage,#cameraMessage{font-size:19px;line-height:1.6}
  #status{font-size:18px;max-width:85vw;white-space:normal;line-height:1.5}
 }
+
+#liveCamera{max-height:calc(100dvh - 24px);overflow-y:auto}#liveCamera .cameraActions{flex-wrap:wrap}#liveCamera .cameraActions #cameraRetry,#liveCamera .cameraActions #nativeCamera{width:auto;min-height:48px;height:auto;max-width:100%;padding:12px 16px;border-radius:12px;font-size:16px;line-height:1.4}#liveCamera .cameraActions button[hidden]{display:none}
+@media(min-width:900px) and (pointer:fine){#liveCamera .cameraActions #cameraRetry,#liveCamera .cameraActions #nativeCamera{font-size:19px}}

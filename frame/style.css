@@ -63,3 +63,5 @@ nav svg{width:28px;height:28px;shape-rendering:crispEdges}.pixel{fill:currentCol
  .save-buttons a{width:60px;height:56px}
  .save-buttons svg{width:31px;height:31px}
 }
+
+#browser-open{margin:12px auto 0;padding:10px 14px;border-radius:12px;font-size:clamp(15px,1.2vw,18px)}#browser-open[hidden]{display:none}

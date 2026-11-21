@@ -13,7 +13,7 @@ export async function detectSamsungPhone(nav) {
 }
 export function cameraConstraints(facing,samsung,desktop=false) {
  if(desktop)return {audio:false,video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}}};
- const video={facingMode:{ideal:facing},width:{ideal:720},height:{ideal:960},aspectRatio:{ideal:.75},frameRate:{ideal:24,max:30}};
+ const video={facingMode:{ideal:facing},width:{ideal:720},height:{ideal:960},aspectRatio:{ideal:.75},frameRate:{ideal:24}};
  if(samsung&&facing==='user') {
   // Prefer native frames over browser cropping to the requested dimensions.
   video.resizeMode={ideal:'none'};

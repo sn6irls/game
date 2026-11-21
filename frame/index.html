@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff1f7"><title>슈퍼짱의 렌즈 빌려끼기 · SNgirls</title><link rel="stylesheet" href="style.css?v=20261120-tablet"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#fff1f7"><title>슈퍼짱의 렌즈 빌려끼기 · SNgirls</title><link rel="stylesheet" href="style.css?v=20261121-camera"></head>
 <body>
 <svg class="symbols" xmlns="http://www.w3.org/2000/svg"><defs>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4a2 2 0 0 1 2 2v11H2V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></symbol>
@@ -12,7 +12,7 @@
 </defs></svg>
 <main><section class="stage" aria-label="훈녀생정 프레임 카메라">
 <canvas id="view" width="720" height="1280"></canvas><button id="lens-toggle" disabled aria-label="눈 렌즈 켜기" aria-pressed="false" title="눈 렌즈 켜기 / 끄기"></button><span id="eye-notice" role="status" hidden></span><span id="timer" hidden>● 00:00</span>
-<div id="welcome"><div class="entry"><h1>슈퍼짱의<br>렌즈 빌려끼기</h1><button id="start" disabled>불러오는 중…</button><p class="entry-note">카메라 권한 허용해주세요.<br>chrome/safari에서 열어주세요.</p></div></div>
+<div id="welcome"><div class="entry"><h1>슈퍼짱의<br>렌즈 빌려끼기</h1><button id="start" disabled>불러오는 중…</button><button id="browser-open" hidden>Safari / Chrome에서 열기</button><p class="entry-note">카메라 권한 허용해주세요.<br>chrome/safari에서 열어주세요.</p></div></div>
 <p id="status" role="status" aria-live="polite"></p>
 <nav aria-label="카메라 도구">
 <button id="flip" disabled aria-label="전면 / 후면 카메라" title="전면 / 후면"><svg><use href="#i-flip"/></svg></button>
@@ -26,7 +26,7 @@
 // Keep the entry screen responsive even if a module fails before app initialization.
 (function(){
  const button=document.getElementById('start'),status=document.getElementById('status');
- const online='https://sn6irls.github.io/game/frame/?v=20261119-start2';
+ const online='https://sn6irls.github.io/game/frame/?v=20261121-camera';
  function problem(text,label,action){
   document.documentElement.dataset.frameBoot='error';
   status.textContent=text;status.classList.add('error');
@@ -36,9 +36,9 @@
   problem('카메라는 웹주소에서 시작할 수 있어요. 아래 버튼으로 렌즈 프레임을 열어주세요.','웹에서 시작',()=>{location.href=online;});return;
  }
  document.documentElement.dataset.frameBoot='loading';
- const retry=()=>{const url=new URL(location.href);url.searchParams.set('v','20261119-start2');url.searchParams.set('reload',String(Date.now()));location.replace(url.href);};
+ const retry=()=>{const url=new URL(location.href);url.searchParams.set('v','20261121-camera');url.searchParams.set('reload',String(Date.now()));location.replace(url.href);};
  const timer=setTimeout(()=>problem('시작 화면을 불러오는 데 시간이 걸리고 있어요. 연결을 확인한 뒤 다시 눌러주세요.','다시 불러오기',retry),20000);
- import('./app.js?v=20261119-start2').then(()=>{
+ import('./app.js?v=20261121-camera').then(()=>{
   clearTimeout(timer);document.documentElement.dataset.frameBoot='ready';status.textContent='';status.classList.remove('error');button.disabled=false;button.textContent='start';
  }).catch(error=>{
   clearTimeout(timer);console.error('Lens startup failed',error);

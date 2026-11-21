@@ -1,12 +1,14 @@
 import {EyeTracker} from './eye-tracker.js?v=20261119';
-import {browserLaunchURL,mayAutoLaunch} from './browser-launch.js?v=20261119-start2';
-import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=20261119-start2';
+import {browserLaunchURL} from './browser-launch.js?v=20261121-camera';
+import {detectSamsungPhone,cameraConstraints,cameraZoom} from './camera-settings.js?v=20261121-camera';
+import {CameraSession,playVideo} from '../shared/camera.js?v=20261121-camera';
 let samsungPhone=false;
 detectSamsungPhone(navigator).then(value=>{samsungPhone=value;});
 const $=id=>document.getElementById(id);
 const inApp=/Instagram|FBAN|FBAV|KAKAOTALK|YouTube|GSA\/|Line\/|; wv\)/i.test(navigator.userAgent);
 const canvas=$('view'),camera=$('camera'),frame=$('frame'),status=$('status');
 let cameraAttempt=0;
+const cameraSession=new CameraSession(()=>{endRecording();resetCamera();fail('카메라 연결이 중단됐어요. start를 누르면 다시 연결할 수 있어요.');});
 let stream, facing='user', mirror=true, ready=false, busy=false, recorder, recordingStream;
 let resultBlob,resultURL,gifBlob,saveAsset,gifAsset,worker,pressTimer,pressed=false,recordStarted=0,lastDraw=0,gifFrames=0;
 let hue=0,colorIndex=0, chunks=[], photoPending=false, recordFailed=false;
@@ -56,7 +58,7 @@ $('lens-toggle').onclick=()=>{
 };
 function message(text){status.textContent=text;}
 function iconLabel(id,text){$(id).setAttribute('aria-label',text);$(id).title=text;}
-function fail(text){message(text);status.classList.add('error');$('welcome').hidden=false;$('start').disabled=false;$('start').textContent='start';}
+function fail(text){message(text);status.classList.add('error');$('welcome').hidden=false;$('start').disabled=false;$('start').textContent='start';$('browser-open').hidden=!inApp||!browserLaunchURL(navigator.userAgent,location.href);}
 function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
 function setupGL(){
  if(!gl)throw Error('이 브라우저는 프레임 합성을 지원하지 않아요. Safari 또는 Chrome에서 열어주세요.');
@@ -146,50 +148,40 @@ function loop(time){
  }
 }
 function bounded(promise,ms,text){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(text)),ms);})]).finally(()=>clearTimeout(timer));}
-function resetCamera(){eyeTracker.stop();cameraAttempt++;stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;ready=false;busy=false;$('start').disabled=false;$('start').textContent='start';$('welcome').hidden=false;controls();}
+function resetCamera(){eyeTracker.stop();cameraAttempt++;cameraSession.stop();stream=null;frame.pause();ready=false;busy=false;$('start').disabled=false;$('start').textContent='start';$('welcome').hidden=false;controls();}
 async function openCamera(){
- if(inApp){launchBrowser();return;}
- if(busy)return;
+ if(busy||recorder)return;
  if(gl?.isContextLost()){location.reload();return;}
- eyeTracker.stop();
- const attempt=++cameraAttempt;
- status.classList.remove('error');busy=true;ready=false;controls();$('start').disabled=true;$('start').textContent='카메라 연결 중…';message('카메라 권한을 허용해주세요.');
- stream?.getTracks().forEach(t=>t.stop());stream=null;
+ resetCamera();const attempt=cameraAttempt;
+ status.classList.remove('error');busy=true;controls();$('browser-open').hidden=true;$('start').disabled=true;$('start').textContent='카메라 연결 중…';message('카메라를 연결하고 있어요. 권한 요청이 나오면 허용해주세요.');
  try{
-  if(!window.isSecureContext)throw Error('보안 연결이 필요해요. HTTPS 촬영 주소로 열어주세요.');
-  if(!navigator.mediaDevices?.getUserMedia)throw Error('카메라 권한 허용해주세요. chrome/safari에서 열어주세요.');
   if(!gl)throw Error('화면 합성을 시작할 수 없어요. Safari를 완전히 종료한 뒤 다시 열어주세요.');
   const samsung=samsungPhone,desktop=matchMedia('(hover: hover) and (pointer: fine)').matches;
-  // Request permission in the original click, before shader compilation, media
-  // decoding, or any await. A denied Safari request may require a fresh gesture.
-  const request=navigator.mediaDevices.getUserMedia(cameraConstraints(facing,samsung,desktop))
-   .catch(error=>{if(error.name!=='OverconstrainedError'||attempt!==cameraAttempt)throw error;return navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing}}});})
-   .then(value=>{if(attempt!==cameraAttempt){value.getTracks().forEach(t=>t.stop());return {cancelled:true};}return {stream:value};},error=>({error}));
-  // Set the properties as well as the HTML attributes before Safari's play call.
-  frame.muted=true;frame.defaultMuted=true;frame.playsInline=true;
+  // Both requests start in the original tap. Handle each rejection immediately
+  // even if the other request or shader compilation is still pending.
+  const request=cameraSession.open(cameraConstraints(facing,samsung,desktop)).then(stream=>({stream}),error=>({error}));
+  const signal=cameraSession.signal;
+  if(!signal){const acquired=await request;throw acquired.error;}
   if(frame.error)frame.load();
-  // Start muted media within the original tap, before waiting for camera permission.
-  const playback=bounded(frame.play(),12000,'프레임 영상 로딩이 늦어지고 있어요. 연결 확인 후 다시 눌러주세요.').then(()=>null,e=>Error(e.name==='NotAllowedError'?'영상 재생이 차단됐어요. 촬영하기를 다시 눌러주세요.':e.message));
+  const playback=playVideo(frame,signal).then(()=>null,()=>Error('프레임 영상을 재생하지 못했어요. 연결을 확인한 뒤 start를 다시 눌러주세요.'));
   if(!program){try{setupGL();}catch(e){program=null;throw e;}}
-  const acquired=await bounded(request,20000,'카메라 응답을 기다리지 못했어요. 권한을 확인하고 다시 눌러주세요.');
-  if(attempt!==cameraAttempt){acquired.stream?.getTracks().forEach(t=>t.stop());return;}
+  const acquired=await request;
+  if(attempt!==cameraAttempt)return;
   if(acquired.error)throw acquired.error;
-  if(!acquired.stream)throw Error('카메라 연결이 취소됐어요. 다시 눌러주세요.');
   stream=acquired.stream;const track=stream.getVideoTracks()[0];const zoom=track.getCapabilities?.().zoom;
   if(zoom){try{await bounded(track.applyConstraints({advanced:[{zoom:cameraZoom(zoom,samsung,track.getSettings().facingMode||facing)}]}),1500,'');}catch{}}
   if(attempt!==cameraAttempt)return;
-  mirror=(track.getSettings().facingMode||facing)==='user';camera.muted=true;camera.defaultMuted=true;camera.playsInline=true;camera.srcObject=stream;
-  await bounded(camera.play(),10000,'카메라 재생을 시작하지 못했어요. 다시 눌러주세요.');
+  mirror=(track.getSettings().facingMode||facing)==='user';
+  await cameraSession.attach(camera);
   const playbackError=await playback;if(playbackError)throw playbackError;
-  await bounded(new Promise((resolve,reject)=>{function check(){if(attempt!==cameraAttempt){reject(Error('취소된 촬영'));return;}if(camera.videoWidth>16&&camera.videoHeight>16&&camera.readyState>=2&&frame.readyState>=2){resolve();return;}setTimeout(check,100);}check();}),10000,'화면을 받지 못했어요. 다시 눌러주세요.');
   if(attempt!==cameraAttempt)return;
-  if(document.hidden){resetCamera();return;}
+  if(document.hidden){resetCamera();message('start를 누르면 카메라를 다시 연결할 수 있어요.');return;}
   ready=true;enableLens();$('welcome').hidden=true;$('start').textContent='start';status.classList.remove('error');message('');
  }catch(e){
   if(attempt!==cameraAttempt)return;
-  cameraAttempt++;frame.pause();stream?.getTracks().forEach(t=>t.stop());stream=null;camera.srcObject=null;
-  const texts={NotAllowedError:'카메라 권한이 차단되어 있어요. 주소창의 사이트 설정과 휴대폰·PC 설정에서 카메라를 허용한 후 다시 눌러주세요.',SecurityError:'이 화면에서 카메라 접근이 제한되어 있어요. 브라우저 안내를 확인해주세요.',NotFoundError:'연결된 카메라가 없어요. 카메라 연결 후 다시 눌러주세요.',NotReadableError:'카메라를 다른 앱이 사용 중이거나 기기 설정에서 차단했어요. 확인 후 다시 눌러주세요.',OverconstrainedError:'이 카메라 설정을 사용할 수 없어요. 다른 카메라로 다시 시도해주세요.'};
-  fail(texts[e.name]||e.message);busy=false;controls();
+  resetCamera();
+  const texts={NotAllowedError:'카메라 권한이 차단되어 있어요. 브라우저와 기기 설정에서 카메라를 허용한 후 다시 눌러주세요.',SecurityError:'이 화면에서 카메라 접근이 제한되어 있어요. Safari 또는 Chrome에서 직접 열어주세요.',NotFoundError:'연결된 카메라가 없어요. 카메라 연결 후 다시 눌러주세요.',NotReadableError:'카메라를 사용할 수 없어요. 카메라를 쓰는 다른 앱을 닫고 다시 눌러주세요.',OverconstrainedError:'이 카메라 설정을 사용할 수 없어요. 다시 시도해주세요.',CameraSecurityError:'보안 연결이 필요해요. HTTPS 촬영 주소로 열어주세요.',CameraUnavailableError:'이 브라우저에서 카메라에 접근할 수 없어요. Safari 또는 Chrome에서 열어주세요.',CameraTimeoutError:'카메라 응답이 늦어지고 있어요. 권한을 허용했다면 start를 다시 눌러주세요.',CameraPlaybackError:'카메라는 연결됐지만 영상이 시작되지 않았어요. start를 눌러 다시 연결해주세요.'};
+  fail(texts[e.name]||e.message||'카메라 연결을 다시 시도해주세요.');
  }finally{if(attempt===cameraAttempt){busy=false;controls();$('start').disabled=false;}}
 }
 function clearResult(){for(const asset of [saveAsset,gifAsset])if(asset){URL.revokeObjectURL(asset.url);}saveAsset=gifAsset=null;$('save-note').hidden=true;resultURL=null;resultBlob=null;gifBlob=null;worker?.terminate();worker=null;}
@@ -254,24 +246,19 @@ function launchBrowser(){
  const target=browserLaunchURL(navigator.userAgent,location.href);
  if(target){try{location.assign(target);}catch{}}
 }
-// Auto-launch once after the entry UI can render. The start button always retries
-// synchronously from a real user tap, independently of the auto-launch throttle.
-if(inApp){
- let previous=0;try{previous=Number(sessionStorage.getItem('frame-browser-auto')||0);}catch{}
- if(mayAutoLaunch(true,location.href,previous,Date.now())){
-  try{sessionStorage.setItem('frame-browser-auto',String(Date.now()));}catch{}
-  setTimeout(launchBrowser,100);
- }
-}
+// Try the host browser's camera first. An external-app launch may be blocked,
+// so offer it explicitly on failure instead of making start silently do nothing.
+$('browser-open').onclick=()=>{message('브라우저가 열리지 않으면 앱 메뉴에서 Safari 또는 Chrome으로 열기를 선택해주세요.');launchBrowser();};
 function saveNotice(text){$('save-note').hidden=false;$('save-note').textContent=text;}
 for(const id of ['save','gif'])$(id).addEventListener('click',event=>{
- if(inApp){event.preventDefault();saveNotice('촬영 전에 Chrome 또는 삼성 인터넷에서 이 페이지를 열어주세요.');return;}
  if($(id).getAttribute('aria-disabled')==='true'||!$(id).hasAttribute('href')){event.preventDefault();saveNotice('파일을 준비하고 있어요. 잠시 후 저장을 눌러주세요.');return;}
  // Keep the user's native link navigation: no synthetic click, share sheet or popup.
- saveNotice('다운로드 요청을 보냈어요. 휴대폰 다운로드 알림을 확인해주세요.');
+ saveNotice(inApp?'저장이 되지 않으면 앱 메뉴에서 Safari 또는 Chrome으로 열어 촬영해주세요.':'다운로드 요청을 보냈어요. 휴대폰 다운로드 알림을 확인해주세요.');
 });
-frame.addEventListener('error',()=>{if(!ready)return;eyeTracker.stop();endRecording();stream?.getTracks().forEach(t=>t.stop());ready=false;fail('프레임 영상을 불러오지 못했어요. 연결 확인 후 다시 눌러주세요.');controls();});
-canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();eyeTracker.stop();ready=false;endRecording();stream?.getTracks().forEach(t=>t.stop());fail('화면 연결이 중단됐어요. 페이지를 새로고침해주세요.');});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){eyeTracker.stop();endRecording();frame.pause();if(!recorder)resetCamera();else{stream?.getTracks().forEach(t=>t.stop());ready=false;$('welcome').hidden=false;}}});
-window.addEventListener('pagehide',()=>{clearInterval(captureTipTimer);eyeTracker.stop();cameraAttempt++;endRecording();stream?.getTracks().forEach(t=>t.stop());worker?.terminate();});
+frame.addEventListener('error',()=>{if(!ready)return;endRecording();resetCamera();fail('프레임 영상을 불러오지 못했어요. 연결 확인 후 다시 눌러주세요.');});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();endRecording();resetCamera();fail('화면 연결이 중단됐어요. start를 누르면 페이지를 다시 불러옵니다.');});
+function suspendCamera(){endRecording();resetCamera();message('start를 누르면 카메라를 다시 연결할 수 있어요.');}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready)suspendCamera();});
+window.addEventListener('pagehide',()=>{clearInterval(captureTipTimer);suspendCamera();worker?.terminate();});
+window.addEventListener('pageshow',event=>{if(event.persisted)suspendCamera();});
 requestAnimationFrame(loop);
