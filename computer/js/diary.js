@@ -55,7 +55,7 @@ const diaryUI=(()=>{
    const message=document.createElement('div');message.className='d-msg';message.textContent=item.msg;article.append(meta,message);fragment.append(article);
   }
   list.replaceChildren(fragment);if(resetScroll)list.scrollTop=0;
-  newButton.textContent=copy('새 메모','New note');readButton.textContent=copy(`방명록 (${total})`,`Guestbook (${total})`);exportButton.textContent=copy('파일 저장','Export');
+  newButton.textContent=copy('새 메모','New note');readButton.textContent=copy(`방명록 (${total})`,`Guestbook (${total})`);exportButton.textContent=copy('저장','Save');
   newButton.hidden=!owner();exportButton.hidden=!owner();win.querySelector('.memo-label').textContent=copy('메모','Memo');
   pageLabel.textContent=`${page+1} / ${pages}`;pageLabel.setAttribute('aria-label',copy(`${pages}페이지 중 ${page+1}페이지`,`Page ${page+1} of ${pages}`));
   for(const button of pager.querySelectorAll('button')){
@@ -78,9 +78,11 @@ const diaryUI=(()=>{
   if(!item)return;const entries=load();entries.push(item);if(!save(entries))return;
   memo.value='';AudioSys.sfx('ding');page=Math.floor((allEntries().length-1)/PAGE_SIZE);render(true);selectView('read');
  });
- exportButton.addEventListener('click',()=>{
-  const url=URL.createObjectURL(new Blob([JSON.stringify(allEntries(),null,2)],{type:'application/json'}));
-  const a=document.createElement('a');a.href=url;a.download='guestbook.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ exportButton.addEventListener('click',async()=>{
+  exportButton.disabled=true;
+  try{const entries=allEntries();await saveGuestbookImage(entries.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE),page,Math.max(1,Math.ceil(entries.length/PAGE_SIZE)));}
+  catch{toast(copy('이미지를 저장하지 못했어요. 다시 눌러주세요.','Could not save the image. Please try again.'));}
+  finally{exportButton.disabled=false;}
  });
  const ui={
   async open(app){appRef=app;app.closeCurrent=()=>ui.close();initialize();page=0;view='read';I18N.apply(win);render(true);overlay.classList.remove('hidden');AudioSys.sfx('open');await loadArchive();render();},

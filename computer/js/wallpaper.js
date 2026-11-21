@@ -7,7 +7,8 @@
   const width=art.width*scale,height=art.height*scale;
   // Keep the character's eyes in view on portrait displays as well.
   const focus=r.width/r.height<1?.72:.5;
-  const left=(r.width-width)*focus,top=(r.height-height)*.5;
+  const lift=Math.min(64,Math.max(0,height-r.height)*.25);
+  const left=(r.width-width)*focus,top=(r.height-height)*.5-lift;
   Object.assign(image.style,{width:width+'px',height:height+'px',left:left+'px',top:top+'px'});
   for(const eye of eyes){
    const [x,y,w,h]=eye.box;Object.assign(eye.canvas.style,{left:(left+x*width)+'px',top:(top+y*height)+'px',width:w*width+'px',height:h*height+'px'});

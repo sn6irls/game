@@ -108,7 +108,7 @@ const CONFIG={
       },
       {
         "id": "schoolmeal",
-        "name": "슈퍼짱 급식주기",
+        "name": "급식주기",
         "en": "School Meal",
         "icon": "🍱",
         "url": "https://sn6irls.github.io/game/schoolmeal/",
@@ -117,7 +117,7 @@ const CONFIG={
       },
       {
         "id": "frame",
-        "name": "슈퍼짱의 렌즈",
+        "name": "렌즈 빌려끼기",
         "en": "Lens Frame",
         "icon": "📸",
         "url": "https://sn6irls.github.io/game/frame/",
@@ -126,7 +126,7 @@ const CONFIG={
       },
       {
         "id": "music",
-        "name": "평범양의 셔틀버스",
+        "name": "셔틀버스 mp3",
         "en": "Shuttle Bus",
         "icon": "🚌",
         "url": "https://sn6irls.github.io/game/music/",
@@ -135,7 +135,7 @@ const CONFIG={
       },
       {
         "id": "kimchibingsumaker",
-        "name": "김치빙수 만들기",
+        "name": "김치빙수만들기",
         "en": "Kimchi Bingsu",
         "icon": "🍧",
         "url": "https://sn6irls.github.io/game/kimchibingsumaker/",

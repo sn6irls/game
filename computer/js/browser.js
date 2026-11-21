@@ -113,7 +113,8 @@ const browserUI = (() => {
       const col=Math.floor(index/rows),row=index%rows;
       const x=game?16+col*cellW:innerWidth-16-el.offsetWidth-col*cellW;
       const y=(game?20:66)+row*cellH;
-      placeIcon(el,...(spots.get(el.dataset.id)||[x,y]));
+      const initial=el.dataset.id==='diary'?[(innerWidth-el.offsetWidth)/2,(bottom-el.offsetHeight)/2]:[x,y];
+      placeIcon(el,...(spots.get(el.dataset.id)||initial));
     }
   }
   function dragIcon(el){el.addEventListener('pointerdown',e=>{

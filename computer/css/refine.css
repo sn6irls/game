@@ -25,3 +25,7 @@
 @media(max-width:500px){.notepad-pagination{gap:5px;padding:8px}.notepad-pagination button{min-width:42px;padding:5px 7px;font-size:12px}#diary-page{min-width:58px;font-size:12px}}
 
 .wmp-screen,.wmp.size-mini .wmp-screen{min-height:200px}
+
+/* Simple playlist: video, track name and three playback buttons. */
+.wmp.simple{width:min(420px,calc(100vw - 24px))}.wmp.simple .wmp-body{display:grid;gap:10px;margin:0;padding:10px;background:#ece9d8}.wmp.simple .wmp-screen{width:100%;min-height:200px;aspect-ratio:16/9;height:auto;border:0}.wmp.simple .wmp-track{margin:0;padding:4px 2px;font:16px/1.5 'Galmuri11',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#253444;opacity:1;letter-spacing:0}.wmp.simple .wmp-pad{gap:12px}.wmp.simple .wmp-pad button{width:48px;height:40px;font:16px/1 Arial;border-radius:3px}.wmp.simple .wmp-pad .wmp-play{width:60px;height:42px;font-size:20px}.wmp.simple .wmp-external{font:13px/1.5 'Galmuri11',sans-serif;padding:4px 0 0;color:#49617f;text-align:center}.wmp.simple .wmp-message{padding:8px;font-size:14px}.wmp.simple .wmp-message[hidden]{display:none}
+@media(min-width:1800px) and (pointer:fine){.wmp.simple{width:480px}.wmp.simple .wmp-track{font-size:18px}.wmp.simple .wmp-pad button{height:44px}.wmp.simple .wmp-pad .wmp-play{height:46px}.wmp.simple .wmp-external{font-size:14px}}
