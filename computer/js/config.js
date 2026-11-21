@@ -81,11 +81,6 @@ const CONFIG={
     },
     "icons": [
       {
-        "id": "playlist",
-        "label": "playlist",
-        "img": "assets/player.svg"
-      },
-      {
         "id": "diary",
         "label": "방명록",
         "img": "assets/xp-note.webp"

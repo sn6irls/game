@@ -109,7 +109,7 @@ const browserUI = (() => {
     const rows=Math.max(1,Math.min(6,Math.floor((bottom-30)/cellH)));
     let gameIndex=0,utilityIndex=0;
     for(const el of icons){
-      const game=!!el.dataset.game,index=game?gameIndex++:utilityIndex++;
+      const game=!!el.dataset.game,index=game?gameIndex++:(el.dataset.id==='diary'?0:utilityIndex++);
       const col=Math.floor(index/rows),row=index%rows;
       const x=game?16+col*cellW:innerWidth-16-el.offsetWidth-col*cellW;
       const y=(game?20:66)+row*cellH;
