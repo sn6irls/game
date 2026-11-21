@@ -144,7 +144,7 @@ const CONFIG={
       },
       {
         "id": "gacha",
-        "name": "슈퍼짱의 가챠",
+        "name": "가챠뽑기",
         "en": "Super Gacha",
         "icon": "🎰",
         "url": "https://sn6irls.github.io/game/gacha/",
