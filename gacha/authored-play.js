@@ -9,7 +9,7 @@ import {CapsulePhysics} from './capsule-physics.js';
 import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
 import {PRIZES,createPrizeLibrary} from './prize-library.js?v=prize-presentation';
-import {createGameAudio} from './game-audio.js';
+import {createGameAudio} from './game-audio.js?v=reaction-audio';
 import {reactionFor,dialogueText} from './reward-reactions.js';
 import {applyFaceFrame} from './face-atlas.js';
 import {captureGameFrame} from './capture-game.js';
@@ -245,7 +245,7 @@ function syncUI(){
 function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=focusedState();document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
 setFace(1);
 const tone=(hz,duration=.08,delay=0)=>gameAudio.tick(hz,duration,delay);
-function insertCoin(){if(state!=='ready'||coinCredit)return;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();progress=0;transition('inserting');gameAudio.play('coin');navigator.vibrate?.(12);}
+function insertCoin(){if(state!=='ready'||coinCredit)return;gameAudio.stopReaction();setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();progress=0;transition('inserting');gameAudio.play('coin');navigator.vibrate?.(12);}
 $('#coin-tap').onclick=insertCoin;
 function draw(){
  if(state!=='ready'||!coinCredit)return;coinCredit=false;coinRig.coin.visible=false;count++;progress=0;bounceCount=0;dropCorrection=0;ballLaunched=false;rolling.visible=false;setFace(1);blinkEnd=0;
@@ -317,6 +317,7 @@ function showResult(){
  setFace(reaction.face);currentPivot().rotation.set(0,0,0);rewardMotion.reset();
  keepRewardAboveHands();
  addBall(rollEnd,{x:0,y:0,z:0},capsuleColor);speechDismissed=false;transition(rare?'won':'result');
+ gameAudio.react(reaction.emotion);
 }
 let discarded=null;
 function readyAgain(){hideRewards();currentPrize=null;lineKind='idle';lineIndex=0;reactionEmotion='neutral';progress=0;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;speechDismissed=false;transition('ready');}
@@ -324,11 +325,11 @@ function restartRun(){
  physics.reset();ballGroup.clear();balls.length=0;owned.clear();count=spent=misses=0;coinCredit=false;pity=false;knobAngle=0;knobPivot.quaternion.identity();readyAgain();
 }
 again.onclick=()=>{
- if(!resultState())return;drag=null;rewardMotion.release();
+ if(!resultState())return;drag=null;rewardMotion.release();gameAudio.stopReaction();
  if(state==='won'){speechDismissed=true;transition('resetting');tone(740,.13);return;}
  discarded=currentModel().clone(true);scene.add(discarded);currentModel().updateWorldMatrix(true,false);discarded.matrix.copy(currentModel().matrixWorld);discarded.matrix.decompose(discarded.position,discarded.quaternion,discarded.scale);discarded.userData.start=discarded.position.clone();
  const depth=-discarded.position.clone().applyMatrix4(camera.matrixWorldInverse).z,travel=2*depth*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect+.35;
- discarded.userData.throw=new THREE.Vector3(-1,0,0).applyQuaternion(camera.quaternion).multiplyScalar(travel);hideRewards();speechDismissed=true;transition('discarding');tone(220,.06);
+ discarded.userData.throw=new THREE.Vector3(-1,0,0).applyQuaternion(camera.quaternion).multiplyScalar(travel);hideRewards();speechDismissed=true;transition('discarding');gameAudio.play('discard');
 };
 
 function modal(){return !!document.querySelector('dialog[open]');}
