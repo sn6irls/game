@@ -1,5 +1,7 @@
 미니게임 모음
 
+NEW! 슈퍼짱의 컴퓨터 https://sn6irls.github.io/game/computer/
+
 바탕화면 꾸미기 Desktop Games https://sn6irls.github.io/game/desktop/
 
 렌즈 프레임 Lens Frame https://sn6irls.github.io/game/frame/

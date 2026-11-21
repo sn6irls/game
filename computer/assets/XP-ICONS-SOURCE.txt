@@ -1,0 +1,8 @@
+XP system icons extracted from shell32.dll (32-bit icon frames):
+https://github.com/bartekl1/windows-ui-assets/tree/main/Icons/Windows%20XP
+Paint icon extracted from the XP mspaint.exe resource, without executing it:
+https://github.com/Chadtech/MSpaintXP
+Additional XP icon artwork:
+https://github.com/softwarehistorysociety/XPIcons/tree/main/XP
+Windows artwork belongs to Microsoft. User-provided tool and gem images are separate assets.
+`nJunk shaker: 22 unused icons cropped from the user-supplied windows-xp-icons-2000s-beautiful-till-now-v0-h816xafs6wyd1.webp sheet; converted to transparent WebP. Original sheet kept in assets.

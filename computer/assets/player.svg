@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="SNG MEDIA PLAYER">
+  <!-- 2000년대 미디어 플레이어st 아쿠아 구슬 아이콘 (직접 그린 벡터 — 상표 아님) -->
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6fbff"/>
+      <stop offset=".45" stop-color="#9ccdec"/>
+      <stop offset="1" stop-color="#3d84bd"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="lcd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#37a0e6"/>
+      <stop offset="1" stop-color="#083f77"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="7" width="44" height="34" rx="10" fill="url(#body)" stroke="#2d6a9c" stroke-width="1.5"/>
+  <path d="M5 10h38a7 7 0 0 1-1 6H6a7 7 0 0 1-1-6z" fill="url(#gloss)"/>
+  <circle cx="15" cy="24" r="9.5" fill="#eaf5ff" stroke="#4a8dc0" stroke-width="1.4"/>
+  <circle cx="15" cy="24" r="6.4" fill="url(#body)" stroke="#3d84bd" stroke-width="1"/>
+  <path d="M13 20.6l5.2 3.4-5.2 3.4z" fill="#1b5885"/>
+  <rect x="27" y="16.5" width="16" height="15" rx="6" fill="url(#lcd)" stroke="#0a3a6a"/>
+  <rect x="29" y="19" width="12" height="2" rx="1" fill="#cdeaff" opacity=".9"/>
+  <rect x="29" y="23" width="8" height="2" rx="1" fill="#cdeaff" opacity=".7"/>
+  <rect x="29" y="27" width="10" height="2" rx="1" fill="#a6ef77"/>
+  <rect x="6" y="35" width="30" height="3.4" rx="1.7" fill="#eaf5ff" stroke="#4a8dc0" stroke-width=".8"/>
+  <rect x="6.8" y="35.8" width="13" height="1.9" rx="1" fill="#4fae2a"/>
+  <circle cx="41" cy="36.7" r="3.4" fill="url(#body)" stroke="#3d84bd" stroke-width="1"/>
+</svg>
