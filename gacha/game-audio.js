@@ -4,7 +4,7 @@ export function createGameAudio(){
  let context,bgm,crankSource,crankPending=false,crankTimer,crankUntil=0,started=false;
  let reactionSource,reactionId=null,reactionTicket=0,ducked=false;
  const downloads=new Map(),buffers=new Map(),plays={},failed=new Set(),backgroundGains=new Map();
- function bytes(id){if(!downloads.has(id))downloads.set(id,fetch(`./music/${id}.mp3`).then(r=>{if(!r.ok)throw Error('audio');return r.arrayBuffer();}));return downloads.get(id);}
+ function bytes(id){if(!downloads.has(id))downloads.set(id,fetch(`./music/${id==='coin'?'coin-click':id}.mp3`).then(r=>{if(!r.ok)throw Error('audio');return r.arrayBuffer();}));return downloads.get(id);}
  function buffer(id){if(!buffers.has(id))buffers.set(id,bytes(id).then(b=>context.decodeAudioData(b.slice(0))));return buffers.get(id);}
  function duckBackground(active){ducked=active;for(const [gain,volume] of backgroundGains)gain.gain.setTargetAtTime(volume*(active?.35:1),context.currentTime,.045);}
  function source(id,data,loop=false,onEnd){const node=context.createBufferSource(),gain=context.createGain(),volume=id==='bgm'?.18:TRACKS[id];node.buffer=data;node.loop=loop;const background=['bgm','trash','ordinary','ssr'].includes(id);if(background)backgroundGains.set(gain,volume);gain.gain.value=volume*(background&&ducked?.35:1);node.connect(gain);gain.connect(context.destination);node.onended=()=>{backgroundGains.delete(gain);node.disconnect();gain.disconnect();onEnd?.();};node.start();plays[id]=(plays[id]||0)+1;return node;}

@@ -176,11 +176,9 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 #gesture-guide.drawn-guide .guide-outline,#gesture-guide.drawn-guide .guide-ink{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none}
 #gesture-guide.drawn-guide .guide-outline{stroke:#000;stroke-width:8}
 #gesture-guide.drawn-guide .guide-ink{stroke:#fff;stroke-width:3.5}
-#gesture-guide.drawn-guide .coin-ring,#gesture-guide.drawn-guide .crank-arrow{filter:none;animation:gacha-line-boil 1s steps(1,end) infinite}
+#gesture-guide.drawn-guide .coin-ring,#gesture-guide.drawn-guide .crank-arrow{filter:none;animation:gacha-line-boil 1s steps(1,end) infinite,action-guide-blink 1.2s steps(1,end) infinite}
 #gesture-guide.drawn-guide .crank-arrow{animation-delay:-.3s;transform:none}
-#gesture-guide .guide-label{position:absolute;left:50%;top:calc(100% + 7px);transform:translateX(-50%);white-space:nowrap;color:#fff;font:400 clamp(14px,1.25vw,20px)/1.4 GachaPixel,monospace;text-shadow:2px 2px #000,-1px -1px #000}
-#crank-label{display:none;pointer-events:none}
-.crank-guide #crank-label{display:block}
+@keyframes action-guide-blink{0%,49%{opacity:1}50%,100%{opacity:.1}}
 @media(prefers-reduced-motion:reduce){#gesture-guide.drawn-guide .ink-art{animation:none;filter:none;transform:none}}
 
 @media (min-width: 900px) and (pointer: fine) {

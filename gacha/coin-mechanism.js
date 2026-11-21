@@ -8,10 +8,11 @@ export function createCoinMechanism(scene,model){
  const coin=new THREE.Group();coin.name='insert-coin';coin.add(model);coin.scale.setScalar(DIAMETER);coin.visible=false;scene.add(coin);
  const up=new THREE.Vector3(0,1,0),outward=new THREE.Vector3(-.766,0,.643).normalize();
  const right=new THREE.Vector3(.643,0,.766).normalize();
- // The top-loading channel above the crank, measured on the authored scan.
- // The old point was on the solid sloping face below this channel.
- const mouthNormal=new THREE.Vector3(-.3050682,.9175949,.2548587).normalize();
- const slot=new THREE.Vector3(.3286158,.7901032,-.0905932).addScaledVector(mouthNormal,.0015);
+ // Mount the short receiver on the front panel immediately above the handle,
+ // rather than on the high ledge under the poster. Keep its mouth in front of
+ // the measured scan so the visible coin never passes through solid geometry.
+ const mouthNormal=up.clone();
+ const slot=new THREE.Vector3(.32831046,.75633866,-.09078512).addScaledVector(outward,.012);
  const rest=new THREE.Vector3(.3259991,.7743548,-.1048983)
   .addScaledVector(new THREE.Vector3(-.5103381,.7086684,.4871798).normalize(),.17).addScaledVector(right,.28);
  rest.y+=.08;
@@ -37,7 +38,7 @@ export function createCoinMechanism(scene,model){
  throat.rotation.x=-Math.PI/2;throat.position.y=-.0003;receiver.add(throat);
 
  const start=new THREE.Vector3(),screen=new THREE.Vector3(),startRotation=new THREE.Quaternion();
- const clear=slot.clone().addScaledVector(outward,.075).addScaledVector(up,.070);
+ const clear=slot.clone().addScaledVector(outward,.085).addScaledVector(up,.045);
  const above=slot.clone().addScaledVector(up,DIAMETER/2+.007);
  const bottom=slot.clone().addScaledVector(up,-DIAMETER/2-.003);
  let clipped=false;
