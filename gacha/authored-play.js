@@ -235,6 +235,8 @@ function syncUI(){
  $('#drawer h2').textContent=lang==='ko'?'경품 리스트':'Prizes';
  $('#drawer .close').setAttribute('aria-label',lang==='ko'?'닫기':'Close');
  $('#coin-label').textContent=lang==='ko'?'동전 넣기':'INSERT COIN';
+ $('#coin-tap').setAttribute('aria-label',lang==='ko'?'동전 넣기':'Insert coin');
+ $('#crank-label').textContent=lang==='ko'?'돌려주세요':'TURN HANDLE';
  $('#reward-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#reward-name').textContent=currentPrize?.[lang]||'';
  $('#preview-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#preview-name').textContent=currentPrize?.[lang]||'';
  previewCaption.hidden=state!=='revealed';previewCaption.disabled=state!=='revealed';previewCaption.setAttribute('aria-label',`${currentPrize?.[lang]||''}. ${lang==='ko'?'클릭해서 슈퍼짱에게 건네기':'Click to give to Super-chan'}`);
@@ -401,10 +403,12 @@ addEventListener('keydown',e=>{if(!e.repeat&&!modal()&&state==='revealed'&&['Ent
 canvas.addEventListener('pointerleave',()=>{if(!drag)pointerTarget.set(0,0);lastFloor=null;lastHover=null;});
 const guide=$('#gesture-guide');
 function updateGuide(){
- guide.hidden=modal()||state!=='ready'||(coinCredit&&(guideDismissed||guideAge>1.05));
+ // Repeat the current action cue on every pull. A partial turn shows it again
+ // on release, and waiting never makes the unlocked-handle cue disappear.
+ guide.hidden=modal()||state!=='ready'||(coinCredit&&drag?.type==='knob');
  if(guide.hidden)return;
- const crank=coinCredit;guide.className=crank?'crank-guide dot-guide':'coin-guide';
- guide.setAttribute('aria-hidden',String(crank));
+ const crank=coinCredit;guide.className=crank?'crank-guide drawn-guide':'coin-guide drawn-guide';
+ guide.setAttribute('aria-hidden','false');
  const c=crank?knobCenter():projected(coinRig.coin.position);
  guide.style.left=c.x+'px';guide.style.top=c.y+'px';guide.style.setProperty('--crank-angle','0rad');
 }

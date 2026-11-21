@@ -171,6 +171,18 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 #preview-name{display:block;font:400 clamp(21px,2.2vw,30px)/1.4 GachaPixel,monospace;word-break:keep-all;overflow-wrap:anywhere}
 #prize-caption:focus-visible{outline:2px dotted white;outline-offset:4px}
 
+/* Recurring action cues use the same white ink / black outline as the UI. */
+#gesture-guide.drawn-guide{border:0;box-shadow:none;animation:none;z-index:3}
+#gesture-guide.drawn-guide .guide-outline,#gesture-guide.drawn-guide .guide-ink{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none}
+#gesture-guide.drawn-guide .guide-outline{stroke:#000;stroke-width:8}
+#gesture-guide.drawn-guide .guide-ink{stroke:#fff;stroke-width:3.5}
+#gesture-guide.drawn-guide .coin-ring,#gesture-guide.drawn-guide .crank-arrow{filter:none;animation:gacha-line-boil 1s steps(1,end) infinite}
+#gesture-guide.drawn-guide .crank-arrow{animation-delay:-.3s;transform:none}
+#gesture-guide .guide-label{position:absolute;left:50%;top:calc(100% + 7px);transform:translateX(-50%);white-space:nowrap;color:#fff;font:400 clamp(14px,1.25vw,20px)/1.4 GachaPixel,monospace;text-shadow:2px 2px #000,-1px -1px #000}
+#crank-label{display:none;pointer-events:none}
+.crank-guide #crank-label{display:block}
+@media(prefers-reduced-motion:reduce){#gesture-guide.drawn-guide .ink-art{animation:none;filter:none;transform:none}}
+
 @media (min-width: 900px) and (pointer: fine) {
  .drawn-ui #speech-text{font-size:clamp(20px,calc(var(--bubble-font,20px) * 1.2),24px)}
  #coin-tap{font-size:20px}
