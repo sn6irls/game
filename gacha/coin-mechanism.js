@@ -2,7 +2,6 @@ import * as THREE from './vendor/three/three.module.js';
 
 const DIAMETER=.038;
 export const COIN_INSERT_DURATION=1.12;
-export const COIN_CONTACT_TIME=.78;
 
 export function createCoinMechanism(scene,model){
  const coin=new THREE.Group();coin.name='insert-coin';coin.add(model);coin.scale.setScalar(DIAMETER);coin.visible=false;scene.add(coin);
@@ -41,7 +40,7 @@ export function createCoinMechanism(scene,model){
  const clear=slot.clone().addScaledVector(outward,.085).addScaledVector(up,.045);
  const above=slot.clone().addScaledVector(up,DIAMETER/2+.007);
  const bottom=slot.clone().addScaledVector(up,-DIAMETER/2-.003);
- let clipped=false;
+ let clipped=false,entered=false;
  function setClipping(enabled){if(clipped===enabled)return;clipped=enabled;for(const m of materials){m.clippingPlanes=enabled?clipping:null;m.needsUpdate=true;}}
  function idle(camera,viewport){
   setClipping(false);coin.visible=true;coin.scale.setScalar(DIAMETER);coin.position.copy(rest);coin.quaternion.copy(camera.quaternion);
@@ -52,7 +51,7 @@ export function createCoinMechanism(scene,model){
   // Its physical diameter remains constant as perspective brings it to the slot.
   coin.position.sub(camera.position).multiplyScalar(DIAMETER/.10).add(camera.position);
  }
- function begin(){setClipping(false);start.copy(coin.position);startRotation.copy(coin.quaternion);}
+ function begin(){setClipping(false);entered=false;start.copy(coin.position);startRotation.copy(coin.quaternion);}
  function insert(seconds){
   const t=THREE.MathUtils.clamp(seconds,0,COIN_INSERT_DURATION);
   // Travel in front of the cabinet, align above the mouth, then slide straight
@@ -66,8 +65,9 @@ export function createCoinMechanism(scene,model){
   }else{
    setClipping(true);coin.position.copy(above).lerp(bottom,THREE.MathUtils.smoothstep(t,.68,COIN_INSERT_DURATION));coin.quaternion.copy(seatedRotation);
   }
+  entered=clipped&&entryPlane.distanceToPoint(coin.position)<=DIAMETER/2;
   coin.scale.setScalar(DIAMETER);coin.visible=t<COIN_INSERT_DURATION;
   return t===COIN_INSERT_DURATION;
  }
- return {coin,slot,rest,idle,begin,insert,entryPlane,receiver};
+ return {coin,slot,rest,idle,begin,insert,entryPlane,receiver,get entered(){return entered;}};
 }

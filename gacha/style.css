@@ -85,23 +85,25 @@ body.authored-game{background:#202020}
 /* Original PNG artwork, with separate gentle line-boil loops for each element. */
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0!important;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .drawn-ui{--ui-inset:clamp(12px,2.5vw,20px)}
-.drawn-ui header{top:auto;bottom:calc(max(5vh,24px) + var(--ui-inset));right:calc(max(7vw,20px) + var(--ui-inset))}
+#scene-vignette{display:none;position:fixed;inset:0;z-index:1;pointer-events:none}
+@media(min-width:900px){#scene-vignette{display:block;background:radial-gradient(ellipse 65% 85% at 50% 48%,transparent 45%,rgba(5,7,14,.10) 72%,rgba(5,7,14,.38) 100%)}}
+.drawn-ui header{top:auto;bottom:clamp(64px,12vh,160px);right:clamp(44px,12vw,360px)}
 .drawn-ui header nav{gap:24px;align-items:center}
-.drawn-ui header button{display:block;width:52px;height:58px;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none;color:white}
+.drawn-ui header button{display:block;width:72px;height:80px;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none;color:white}
 .drawn-ui header button:hover{transform:scale(1.08)}
 .drawn-ui header button svg{display:block;width:100%;height:100%;overflow:visible}
-.drawn-ui #ssr-settings{order:1}.drawn-ui #settings{order:2}.drawn-ui #language{order:3;height:46px}
+.drawn-ui #ssr-settings{order:1}.drawn-ui #settings{order:2}.drawn-ui #language{order:3;height:62px}
 .drawn-ui #save-photo{order:0;width:82px;height:40px;font:400 18px GachaPixel,monospace;color:white;text-shadow:2px 2px #000,-1px -1px #000}
-.drawn-ui .lang-ko{font:400 38px GachaPixel,monospace;-webkit-text-stroke:3px black;paint-order:stroke fill}
-.drawn-ui .counter{left:calc(max(25px,4vw) + var(--ui-inset));top:calc(max(22px,3vh) + var(--ui-inset) * .5);padding:0;border:0;border-radius:0;background:none}
-.drawn-ui .drawn-count{display:flex;align-items:center;gap:10px;height:58px}
-.drawn-ui .count-label{width:116px;height:60px;overflow:visible;animation-delay:-.13s}
+.drawn-ui .lang-ko{font:400 48px GachaPixel,monospace;-webkit-text-stroke:3px black;paint-order:stroke fill}
+.drawn-ui .counter{left:clamp(42px,9vw,280px);top:clamp(34px,6vh,90px);padding:0;border:0;border-radius:0;background:none}
+.drawn-ui .drawn-count{display:flex;align-items:center;gap:10px;height:70px}
+.drawn-ui .count-label{width:140px;height:72px;overflow:visible;animation-delay:-.13s}
 .drawn-ui .drawn-number{display:flex;align-items:baseline;gap:4px;animation-delay:-.38s;animation-duration:1.06s;white-space:nowrap}
-.drawn-ui .drawn-number b{font:400 38px GachaPixel,monospace;letter-spacing:0;color:white;-webkit-text-stroke:3px black;paint-order:stroke fill}
-.drawn-ui .drawn-number small{font:400 26px GachaPixel,monospace;color:white;margin:0;-webkit-text-stroke:3px black;paint-order:stroke fill}
+.drawn-ui .drawn-number b{font:400 46px GachaPixel,monospace;letter-spacing:0;color:white;-webkit-text-stroke:3px black;paint-order:stroke fill}
+.drawn-ui .drawn-number small{font:400 30px GachaPixel,monospace;color:white;margin:0;-webkit-text-stroke:3px black;paint-order:stroke fill}
 .drawn-ui .counter .spending{margin-top:0;animation-delay:-.62s;animation-duration:.94s}
-.drawn-ui .counter .spending strong{font:400 27px GachaPixel,monospace;color:white;letter-spacing:1px;margin:0;-webkit-text-stroke:3px black;paint-order:stroke fill}
-.drawn-ui .count-label-en{font:400 30px GachaPixel,monospace;color:white;-webkit-text-stroke:3px black;paint-order:stroke fill}
+.drawn-ui .counter .spending strong{font:400 32px GachaPixel,monospace;color:white;letter-spacing:1px;margin:0;-webkit-text-stroke:3px black;paint-order:stroke fill}
+.drawn-ui .count-label-en{font:400 36px GachaPixel,monospace;color:white;-webkit-text-stroke:3px black;paint-order:stroke fill}
 .drawn-ui .speech{max-width:none;background:none;border:0;border-radius:0;box-shadow:none;padding:0;isolation:isolate;transform:none;font:400 20px/1.45 GachaPixel,monospace;color:#191b1d}
 .drawn-ui .speech-art{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:-1;pointer-events:none;animation-delay:-.47s;animation-duration:1.08s}
 .drawn-ui #speech-text{position:absolute;left:var(--text-x,49.57%);right:auto;top:var(--text-y,37.49%);width:80%;height:auto;display:block;transform:translate(-50%,-50%);text-align:center;word-break:keep-all;white-space:pre-line;font-size:var(--bubble-font,18px);line-height:1.45}
@@ -109,7 +111,7 @@ body.authored-game{background:#202020}
 .ink-art{animation:gacha-line-boil .88s steps(1,end) infinite;transform-origin:center}
 #ssr-settings .ink-art{animation-delay:-.17s;animation-duration:.96s}#settings .ink-art{animation-delay:-.39s;animation-duration:.82s}#language .ink-art{animation-delay:-.92s;animation-duration:1.04s}
 @keyframes gacha-line-boil{0%,100%{filter:url('#gacha-ink-0');transform:translate(-.35px,0) rotate(-.3deg)}25%{filter:url('#gacha-ink-1');transform:translate(.35px,.4px) rotate(.25deg)}50%{filter:url('#gacha-ink-2');transform:translate(.15px,-.3px) rotate(-.15deg)}75%{filter:url('#gacha-ink-3');transform:translate(-.3px,.2px) rotate(.3deg)}}
-@media(max-width:520px){.drawn-ui .counter{left:calc(18px + var(--ui-inset));top:calc(18px + var(--ui-inset) * .5)}.drawn-ui .count-label{width:93px;height:48px}.drawn-ui .drawn-count{gap:6px;height:49px}.drawn-ui .drawn-number b{font-size:31px}.drawn-ui .drawn-number small{font-size:23px}.drawn-ui .counter .spending strong{font-size:23px}.drawn-ui .speech{font-size:16px}.drawn-ui header{right:calc(7vw + var(--ui-inset));bottom:calc(5vh + var(--ui-inset))}.drawn-ui header button{width:44px;height:50px}.drawn-ui header nav{gap:21px}}
+@media(max-width:520px){.drawn-ui .count-label{width:110px;height:57px}.drawn-ui .drawn-count{gap:6px;height:58px}.drawn-ui .drawn-number b{font-size:37px}.drawn-ui .drawn-number small{font-size:26px}.drawn-ui .counter .spending strong{font-size:27px}.drawn-ui .count-label-en{font-size:30px}.drawn-ui .speech{font-size:16px}.drawn-ui header button{width:56px;height:64px}.drawn-ui #language{height:50px}.drawn-ui .lang-ko{font-size:40px}.drawn-ui header nav{gap:21px}}
 @media(prefers-reduced-motion:reduce){.drawn-ui .ink-art{animation:none;filter:none;transform:none}}
 .drawn-ui svg.ink-art{overflow:hidden;pointer-events:none}
 .drawn-ui svg.ink-art image{pointer-events:none}

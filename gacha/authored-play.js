@@ -17,7 +17,8 @@ import {installDrawnUI,syncDrawnUI,BUBBLES} from './handdrawn-ui.js';
 import {floorFootprint} from './scene-colliders.js';
 import {createContactShadows} from './contact-shadows.js';
 import {installMachinePrice} from './machine-price.js';
-import {createCoinMechanism} from './coin-mechanism.js?v=lower-slot';
+import {createCoinMechanism} from './coin-mechanism.js?v=contact-sync';
+import {createHatchInterior} from './hatch-interior.js';
 
 installDrawnUI();
 const gameAudio=createGameAudio();
@@ -88,17 +89,13 @@ const headRest={pitch:-.055,yaw:.11};neck.rotation.set(headRest.pitch,headRest.y
 const knobPivot=new THREE.Group();new THREE.Box3().setFromObject(knob).getCenter(knobPivot.position);scene.add(knobPivot);knobPivot.attach(knob);
 const knobAxis=new THREE.Vector3(-.766,0,.643).normalize(),hatchRight=new THREE.Vector3(.643,0,.766).normalize();
 const hatchBox=new THREE.Box3().setFromObject(hatch),hatchCenter=hatchBox.getCenter(new THREE.Vector3());
-// Keep the printed outer flap, with a dark inner face and fitted dark recess.
-hatch.updateWorldMatrix(true,true);
-const hatchInside=hatch.clone(true);hatch.matrixWorld.decompose(hatchInside.position,hatchInside.quaternion,hatchInside.scale);
-hatchInside.traverse(o=>{if(o.isMesh){o.material=new THREE.MeshBasicMaterial({color:0x030303,side:THREE.DoubleSide,toneMapped:false});o.castShadow=false;}});
-scene.add(hatchInside);hatchInside.position.addScaledVector(knobAxis,.002);hatchInside.visible=false;
+const hatchInterior=createHatchInterior(scene,machine,hatch,hatchRight,knobAxis),hatchInside=hatchInterior.mesh;
 const hinge=new THREE.Group();hinge.position.copy(hatchCenter);hinge.position.y=hatchBox.max.y;scene.add(hinge);hinge.attach(hatch);
 hatch.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;const lift=m=>{const copy=m.clone();copy.polygonOffset=true;copy.polygonOffsetFactor=-1;copy.polygonOffsetUnits=-1;
  copy.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nif (!gl_FrontFacing) diffuseColor.rgb = vec3(0.006);');};copy.customProgramCacheKey=()=> 'dark-hatch-inside-v2';
  return copy;};o.material=Array.isArray(o.material)?o.material.map(lift):lift(o.material);}});
 const hatchRest={position:hatch.position.clone(),quaternion:hatch.quaternion.clone(),scale:hatch.scale.clone()};
-function closeHatch(){hinge.quaternion.identity();hatch.position.copy(hatchRest.position);hatch.quaternion.copy(hatchRest.quaternion);hatch.scale.copy(hatchRest.scale);hatch.visible=true;hatchInside.visible=false;hatch.updateWorldMatrix(true,true);}
+function closeHatch(){hinge.quaternion.identity();hatch.position.copy(hatchRest.position);hatch.quaternion.copy(hatchRest.quaternion);hatch.scale.copy(hatchRest.scale);hatch.visible=true;hatchInterior.setOpen(false);hatch.updateWorldMatrix(true,true);}
 
 let faceMaterial;head.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material])if(m.name==='Material.003')faceMaterial=m;});
 if(!faceMaterial)throw Error('Face material missing');
@@ -248,7 +245,8 @@ function syncUI(){
 function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=focusedState();document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
 setFace(1);
 const tone=(hz,duration=.08,delay=0)=>gameAudio.tick(hz,duration,delay);
-function insertCoin(){if(state!=='ready'||coinCredit)return;gameAudio.stopReaction();setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();progress=0;transition('inserting');gameAudio.play('coin');navigator.vibrate?.(12);}
+let coinClickPlayed=false;
+function insertCoin(){if(state!=='ready'||coinCredit)return;gameAudio.stopReaction();setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();coinClickPlayed=false;progress=0;transition('inserting');navigator.vibrate?.(12);}
 $('#coin-tap').onclick=insertCoin;
 function draw(){
  if(state!=='ready'||!coinCredit)return;coinCredit=false;coinRig.coin.visible=false;count++;progress=0;bounceCount=0;dropCorrection=0;ballLaunched=false;rolling.visible=false;setFace(1);blinkEnd=0;
@@ -288,7 +286,7 @@ function launchBall(){
 function updateDispense(dt){
  const opening=hatchOpening(age,reduced.matches);
  hinge.quaternion.setFromAxisAngle(hatchRight,-opening);
- hatch.visible=true;hatchInside.visible=opening>.035;if(age>=HATCH_DURATION)closeHatch();
+ hatch.visible=true;hatchInterior.setOpen(opening>.035);if(age>=HATCH_DURATION)closeHatch();
  for(let i=0;i<HATCH_CONTACTS.length;i++)if(age>=HATCH_CONTACTS[i]&&age-dt<HATCH_CONTACTS[i])tone(i===0?960:720,i===0?.035:.025);
  if(age>=.38&&!ballLaunched)launchBall();
  if(ballLaunched){
@@ -443,7 +441,7 @@ $('#settings').onclick=()=>{
 $('#drawer').addEventListener('click',e=>{if(e.target===$('#drawer'))$('#drawer').close();});
 $('#save-photo').onclick=async()=>{
  if(photoBusy||state!=='won')return;photoBusy=true;
- try{renderer.render(scene,camera);const frame=await captureGameFrame(canvas,[$('#speech'),$('.counter'),rewardInfo]);const blob=await new Promise(resolve=>frame.toBlob(resolve,'image/png'));const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`super-gacha-${count}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}finally{photoBusy=false;}
+ try{renderer.render(scene,camera);const frame=await captureGameFrame(canvas,[$('#scene-vignette'),$('#speech'),$('.counter'),rewardInfo]);const blob=await new Promise(resolve=>frame.toBlob(resolve,'image/png'));const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`super-gacha-${count}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}finally{photoBusy=false;}
 };
 const swap=$('#ssr-drawer'),input=$('#ssr-file');let importing=false;
 $('#ssr-settings').onclick=()=>{$('#ssr-notice').textContent='';swap.showModal();};
@@ -490,7 +488,9 @@ function frame(now){
  }
  if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);
  else if(state==='inserting'){
-  if(coinRig.insert(age,camera)){coinCredit=true;spent+=4000;transition('ready');navigator.vibrate?.([12,20,16]);}
+  const inserted=coinRig.insert(age,camera);
+  if(coinRig.entered&&!coinClickPlayed){coinClickPlayed=true;gameAudio.play('coin');}
+  if(inserted){coinCredit=true;spent+=4000;transition('ready');navigator.vibrate?.([12,20,16]);}
  }else coinRig.coin.visible=false;
  if(state==='dispensing')updateDispense(dt);
  if(state==='zooming'){const t=THREE.MathUtils.smootherstep(age,0,.85);exhibit.position.copy(liftStart).multiplyScalar(1-t);exhibit.scale.setScalar(lerp(liftStartScale,capsuleScale,t));exhibit.userData.zoom=exhibit.scale.x/capsuleScale;if(t===1){exhibit.position.set(0,0,0);transition('capsule');}}
@@ -526,7 +526,7 @@ requestAnimationFrame(now=>{
 if(new URLSearchParams(location.search).has('qa'))window.gachaDiagnostics=()=>({
  sound:gameAudio.stats(),previewName:$('#preview-name').textContent,previewCaption:!previewCaption.hidden,heldVisible:!!currentModel()?.visible,
  reaction:{kind:lineKind,index:lineIndex,emotion:reactionEmotion,bubble:bubbleKind()},
- coinFacing:Math.abs(coinRig.coin.quaternion.dot(camera.quaternion)),coinScale:coinRig.coin.scale.x,
+ coinFacing:Math.abs(coinRig.coin.quaternion.dot(camera.quaternion)),coinScale:coinRig.coin.scale.x,coinEntered:coinRig.entered,
  state,age,expression,faceOffset:faceMaterial.map.offset.toArray(),faceRepeat:faceMaterial.map.repeat.toArray(),count,spent,coinCredit,coinVisible:coinRig.coin.visible,coinPoint:projected(coinRig.coin.position),coinPosition:coinRig.coin.position.toArray(),coinSlot:coinRig.slot.toArray(),ssrAsset:'ssr-lowpoly.glb',odds:DEFAULT_ODDS,misses,pity,prize:currentPrize,owned:Object.fromEntries(owned),cursorHidden:getComputedStyle(canvas).cursor==='none',
  receiptVisible:trash.visible,ssrVisible:(customSSR||ssr).visible,customSSR:!!customSSR,importing,pile:physics.bodies.length,pileBodies:physics.snapshot(),collisions:physics.collisionCount,solidHits:physics.solidHits,solidObstacles:physics.solidObstacles,viewPlanes:physics.viewPlanes,
  ballScreens:balls.map(b=>projected(b.position)),knob:knobCenter(),capsulePoint:projected(exhibit.position,revealCamera),rewardPoint:projected(currentPivot().position),
