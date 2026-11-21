@@ -163,7 +163,7 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 
 #play-actions #play-again{font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
 @keyframes again-blink{0%,60%,100%{opacity:1}61%,95%{opacity:.25}}
-#play-actions #play-again:hover,#play-actions #play-again:focus-visible{animation:none;opacity:1}
+#play-actions #play-again:focus-visible{outline:2px dotted white;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
 
 #prize-caption{position:fixed;left:50%;top:var(--prize-caption-top,73%);transform:translateX(-50%);z-index:12;width:min(620px,86vw);margin:0;padding:8px 12px;border:0;border-radius:0;background:none;box-shadow:none;color:#fff;text-align:center;font-family:GachaPixel,monospace;text-shadow:2px 2px #000,-1px -1px #000;transition:none}

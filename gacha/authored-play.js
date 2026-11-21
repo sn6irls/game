@@ -381,9 +381,15 @@ canvas.addEventListener('pointerdown',e=>{
   const id=ballHit();if(id!==null&&raycaster.ray.intersectPlane(ground,floorPoint)){physics.grab(id,floorPoint.x*10,floorPoint.z*10);drag={...start,type:'ball'};return;}
  }
 });
-canvas.addEventListener('pointermove',e=>{
+// Keep gaze/parallax continuous across HTML controls; scene gestures stay on the canvas.
+addEventListener('pointermove',e=>{
  if(modal())return;
  pointerTarget.set(clamp(e.clientX/view.width*2-1,-1,1),clamp(e.clientY/view.height*2-1,-1,1));
+},{capture:true,passive:true});
+addEventListener('pointerout',e=>{if(!e.relatedTarget&&!drag)pointerTarget.set(0,0);});
+addEventListener('blur',()=>{if(!drag)pointerTarget.set(0,0);});
+canvas.addEventListener('pointermove',e=>{
+ if(modal())return;
  if(!drag){sweepFloor(e);sweepVisibleBalls(e);return;}
  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.total+=Math.abs(dx)+Math.abs(dy);
  if(drag.type==='knob'&&state==='ready'){
@@ -402,7 +408,7 @@ canvas.addEventListener('pointerup',e=>{
 });
 canvas.addEventListener('pointercancel',()=>{gameAudio.stopCrank();rotationControls[drag?.type]?.release();drag=null;physics.release();lastFloor=null;});
 addEventListener('keydown',e=>{if(!e.repeat&&!modal()&&state==='revealed'&&['Enter',' '].includes(e.key)){e.preventDefault();showResult();}});
-canvas.addEventListener('pointerleave',()=>{if(!drag)pointerTarget.set(0,0);lastFloor=null;lastHover=null;});
+canvas.addEventListener('pointerleave',()=>{lastFloor=null;lastHover=null;});
 const guide=$('#gesture-guide');
 function updateGuide(){
  // Repeat the current action cue on every pull. A partial turn shows it again
