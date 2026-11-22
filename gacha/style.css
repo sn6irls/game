@@ -141,11 +141,8 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 #coin-label{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);white-space:nowrap;pointer-events:auto}
 @keyframes coin-hint{0%,100%{opacity:1}50%{opacity:.55}}
 
-/* Plain type belongs to the result; the controls stay underneath it. */
+/* Keep the held-result replay centered; photo save sits just below it. */
 #play-actions button{pointer-events:auto}
-#reward-info{position:absolute;left:50%;bottom:calc(50% + 46px);transform:translateX(-50%);width:min(370px,56vw);text-align:center;color:#fff;pointer-events:none;text-shadow:2px 2px #000,-1px -1px #000;font-family:GachaPixel,monospace}
-#reward-grade{display:block;font-size:13px;line-height:1.5;letter-spacing:2px;margin:0 0 5px;color:#e4e4e4}
-#reward-name{display:block;font:400 clamp(15px,3.8vw,21px)/1.35 GachaPixel,monospace;word-break:keep-all;overflow-wrap:anywhere}
 .result-buttons{position:absolute;inset:0;display:block;pointer-events:none}
 #play-actions #save-photo{position:absolute;left:50%;top:calc(50% + 50px);transform:translateX(-50%)}
 
@@ -161,7 +158,7 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 .drawn-ui #drawer .prize-card.locked img{filter:brightness(0) invert(.45);opacity:.8}
 .drawn-ui #drawer .prize-name{font:400 14px/1.4 GachaPixel,monospace;min-height:39px;word-break:keep-all;overflow-wrap:anywhere;color:#fff}
 .drawn-ui #drawer .prize-card b{font:400 11px/1.4 GachaPixel,monospace;color:#aaa;opacity:1;margin-top:6px;letter-spacing:1px}
-@media(max-width:520px){#play-actions{gap:9px}.result-buttons{flex-direction:column;gap:0}#reward-grade{font-size:12px}.drawn-ui #prize-list{gap:26px 16px}#coin-label{font-size:13px}}
+@media(max-width:520px){#play-actions{gap:9px}.result-buttons{flex-direction:column;gap:0}.drawn-ui #prize-list{gap:26px 16px}#coin-label{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.coin-ring{animation:none}}
 
 #play-actions #play-again{position:absolute;left:50%;top:50%;margin:0;transform:translate(-50%,-50%);font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
@@ -189,9 +186,6 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 @media (min-width: 900px) and (pointer: fine) {
  .drawn-ui #speech-text{font-size:var(--speech-fit-font,clamp(20px,calc(var(--bubble-font,20px) * 1.2),24px))}
  #coin-tap{font-size:20px}
- #reward-info{width:min(460px,56vw)}
- #reward-grade{font-size:17px}
- #reward-name{font-size:26px;line-height:1.4}
  #play-actions button,#play-actions #save-photo{font-size:29px}
  #scene-error,#toast{font-size:19px;line-height:1.5}
  #ssr-drawer .swap-content{width:min(640px,92vw)}

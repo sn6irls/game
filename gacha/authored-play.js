@@ -220,9 +220,8 @@ let lang='ko',state='ready',count=0,spent=0,coinCredit=false,age=0,elapsed=0,pro
 let blinkAt=3,blinkEnd=0,guideAge=0,guideDismissed=false,photoBusy=false,speechDismissed=false;
 let introDismissed=false,exhaustedLineDismissed=false;
 const actions=document.createElement('div');actions.id='play-actions';actions.hidden=true;
-const rewardInfo=document.createElement('div');rewardInfo.id='reward-info';rewardInfo.setAttribute('aria-live','polite');rewardInfo.innerHTML='<small id="reward-grade"></small><strong id="reward-name"></strong>';
 const resultButtons=document.createElement('div');resultButtons.className='result-buttons';
-const again=document.createElement('button');again.id='play-again';resultButtons.append(again,$('#save-photo'));actions.append(rewardInfo,resultButtons);document.body.append(actions);
+const again=document.createElement('button');again.id='play-again';resultButtons.append(again,$('#save-photo'));actions.append(resultButtons);document.body.append(actions);
 const resultState=()=>state==='result'||state==='won';
 const previewCaption=document.createElement('button');previewCaption.id='prize-caption';previewCaption.type='button';previewCaption.hidden=true;previewCaption.setAttribute('aria-live','polite');previewCaption.innerHTML='<small id="preview-grade"></small><strong id="preview-name"></strong>';document.body.append(previewCaption);
 previewCaption.onclick=()=>{if(state==='revealed')showResult();};
@@ -240,13 +239,12 @@ function syncUI(){
  syncDrawnUI(lang,bubbleKind());
  $('#count').textContent=String(count);$('#spent').textContent=lang==='ko'?`${spent?'-':''}${spent.toLocaleString('ko-KR')}원`:`${spent?'-':''}₩${spent.toLocaleString('en-US')}`;
  $('.counter').setAttribute('aria-label',lang==='ko'?`${count}번 뽑기, 사용 금액 ${spent}원`:`${count} pulls, spent ${spent} won`);
- again.textContent=lang==='ko'?'한번 더!':'One more!';
+ again.textContent=lang==='ko'?(idleExhausted()?'한번 더...?':'한번 더!'):(idleExhausted()?'One more...?':'One more!');
  $('#ssr-title').textContent=lang==='ko'?'가챠 교체':'SWAP PRIZE';$('#ssr-choose').textContent=lang==='ko'?'파일선택':'CHOOSE FILE';$('#ssr-reset').textContent=lang==='ko'?'되돌리기':'RESTORE';
  $('#save-photo').textContent=lang==='ko'?'사진 저장':'Save photo';$('#save-photo').hidden=state!=='won';
  $('#drawer h2').textContent=lang==='ko'?'경품 리스트':'Prizes';
  $('#drawer .close').setAttribute('aria-label',lang==='ko'?'닫기':'Close');
  $('#coin-tap').setAttribute('aria-label',lang==='ko'?'동전 넣기':'Insert coin');
- $('#reward-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#reward-name').textContent=currentPrize?.[lang]||'';
  $('#preview-grade').textContent=currentPrize?gradeName(currentPrize.rarity):'';$('#preview-name').textContent=currentPrize?.[lang]||'';
  previewCaption.hidden=state!=='revealed';previewCaption.disabled=state!=='revealed';previewCaption.setAttribute('aria-label',`${currentPrize?.[lang]||''}. ${lang==='ko'?'클릭해서 슈퍼짱에게 건네기':'Click to give to Super-chan'}`);
  actions.hidden=!resultState();again.setAttribute('aria-label',lang==='ko'?(state==='won'?'처음부터 다시':'다시 뽑기'):(state==='won'?'Start over':'Try again'));
@@ -461,7 +459,7 @@ $('#settings').onclick=()=>{
 $('#drawer').addEventListener('click',e=>{if(e.target===$('#drawer'))$('#drawer').close();});
 $('#save-photo').onclick=async()=>{
  if(photoBusy||state!=='won')return;photoBusy=true;
- try{renderer.render(scene,camera);const frame=await captureGameFrame(canvas,[$('#scene-vignette'),$('#speech'),$('.counter'),rewardInfo]);const blob=await new Promise(resolve=>frame.toBlob(resolve,'image/png'));const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`super-gacha-${count}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}finally{photoBusy=false;}
+ try{renderer.render(scene,camera);const frame=await captureGameFrame(canvas,[$('#scene-vignette'),$('#speech'),$('.counter')]);const blob=await new Promise(resolve=>frame.toBlob(resolve,'image/png'));const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`super-gacha-${count}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}finally{photoBusy=false;}
 };
 const swap=$('#ssr-drawer'),input=$('#ssr-file');let importing=false;
 $('#ssr-settings').onclick=()=>{$('#ssr-notice').textContent='';swap.showModal();};
