@@ -10,8 +10,8 @@ import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
 import {PRIZES,createPrizeLibrary} from './prize-library.js?v=angel-cat-super-chan';
 import {createGameAudio} from './game-audio.js?v=coin-click';
-import {reactionFor,dialogueText} from './reward-reactions.js';
-import {applyFaceFrame} from './face-atlas.js';
+import {reactionFor,dialogueText} from './reward-reactions.js?v=quiet-idle';
+import {applyFaceFrame,FACE_IDS} from './face-atlas.js';
 import {captureGameFrame} from './capture-game.js';
 import {installDrawnUI,syncDrawnUI,BUBBLES} from './handdrawn-ui.js';
 import {floorFootprint} from './scene-colliders.js';
@@ -226,8 +226,12 @@ const focusedState=()=>['zooming','capsule','opening','revealed'].includes(state
 let rewardAnnounced=false;
 const bubbleKind=()=>state==='won'?'emphasis':resultState()?'speaking':'thought';
 const gradeName=rarity=>({ko:{N:'쓰레기',R:'평범',SR:'평범',SSR:'슈퍼레어'},en:{N:'TRASH',R:'ORDINARY',SR:'ORDINARY',SSR:'SUPER RARE'}}[lang][rarity]);
+const idleExhausted=()=>spent>100000;
+function resetIdleFace(){reactionEmotion=idleExhausted()?'exhausted':'neutral';setFace(FACE_IDS[reactionEmotion]);blinkEnd=0;blinkAt=elapsed+2.5;}
 function syncUI(){
- document.documentElement.lang=lang;$('#speech-text').textContent=dialogueText(lang,lineKind,lineIndex,count);
+ const quietIdle=idleExhausted()&&(state==='ready'||state==='inserting');
+ document.documentElement.lang=lang;$('#speech-text').textContent=quietIdle?'':dialogueText(lang,lineKind,lineIndex,count);
+ document.body.classList.toggle('speech-dismissed',speechDismissed||quietIdle);
  syncDrawnUI(lang,bubbleKind());
  $('#count').textContent=String(count);$('#spent').textContent=lang==='ko'?`${spent?'-':''}${spent.toLocaleString('ko-KR')}원`:`${spent?'-':''}₩${spent.toLocaleString('en-US')}`;
  $('.counter').setAttribute('aria-label',lang==='ko'?`${count}번 뽑기, 사용 금액 ${spent}원`:`${count} pulls, spent ${spent} won`);
@@ -242,11 +246,11 @@ function syncUI(){
  previewCaption.hidden=state!=='revealed';previewCaption.disabled=state!=='revealed';previewCaption.setAttribute('aria-label',`${currentPrize?.[lang]||''}. ${lang==='ko'?'클릭해서 슈퍼짱에게 건네기':'Click to give to Super-chan'}`);
  actions.hidden=!resultState();again.setAttribute('aria-label',lang==='ko'?(state==='won'?'처음부터 다시':'다시 뽑기'):(state==='won'?'Start over':'Try again'));
 }
-function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=focusedState();document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');document.body.classList.toggle('speech-dismissed',speechDismissed);$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
+function transition(next){state=next;age=0;guideAge=0;guideDismissed=false;if(state==='ready')resetIdleFace();if(state==='ready'&&!coinCredit)coinRig.idle(camera,view);else if(state!=='inserting')coinRig.coin.visible=false;const focus=focusedState();document.body.classList.toggle('capsule-focus',focus);document.body.classList.toggle('previewing',state==='capsule');$('header').inert=focus||['inserting','dispensing','discarding','resetting'].includes(state);syncUI();}
 setFace(1);
 const tone=(hz,duration=.08,delay=0)=>gameAudio.tick(hz,duration,delay);
 let coinClickPlayed=false;
-function insertCoin(){if(state!=='ready'||coinCredit)return;gameAudio.stopReaction();setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;coinRig.begin();coinClickPlayed=false;progress=0;transition('inserting');navigator.vibrate?.(12);}
+function insertCoin(){if(state!=='ready'||coinCredit)return;gameAudio.stopReaction();resetIdleFace();coinRig.begin();coinClickPlayed=false;progress=0;transition('inserting');navigator.vibrate?.(12);}
 $('#coin-tap').onclick=insertCoin;
 function draw(){
  if(state!=='ready'||!coinCredit)return;coinCredit=false;coinRig.coin.visible=false;count++;progress=0;bounceCount=0;dropCorrection=0;ballLaunched=false;rolling.visible=false;setFace(1);blinkEnd=0;
@@ -314,14 +318,14 @@ function showResult(){
  closeHatch();
  exhibit.visible=false;prizePreview.visible=false;hideRewards();currentModel().visible=true;
  const rare=currentPrize.rarity==='SSR';owned.set(currentPrize.id,(owned.get(currentPrize.id)||0)+1);
- const reaction=reactionFor({rarity:currentPrize.rarity,count,spent,pity});lineKind=reaction.kind;lineIndex=reaction.index;reactionEmotion=reaction.emotion;
+ const reaction=reactionFor({rarity:currentPrize.rarity,count,pity});lineKind=reaction.kind;lineIndex=reaction.index;reactionEmotion=reaction.emotion;
  setFace(reaction.face);currentPivot().rotation.set(0,0,0);rewardMotion.reset();
  keepRewardAboveHands();
  addBall(rollEnd,{x:0,y:0,z:0},capsuleColor);speechDismissed=false;transition(rare?'won':'result');
  gameAudio.react(reaction.emotion);
 }
 let discarded=null;
-function readyAgain(){hideRewards();currentPrize=null;lineKind='idle';lineIndex=0;reactionEmotion='neutral';progress=0;setFace(1);blinkEnd=0;blinkAt=elapsed+2.5;speechDismissed=false;transition('ready');}
+function readyAgain(){hideRewards();currentPrize=null;lineKind='idle';lineIndex=0;progress=0;speechDismissed=false;transition('ready');}
 function restartRun(){
  physics.reset();ballGroup.clear();balls.length=0;owned.clear();count=spent=misses=0;coinCredit=false;pity=false;knobAngle=0;knobPivot.quaternion.identity();readyAgain();
 }
@@ -488,7 +492,7 @@ function frame(now){
    neck.rotation.y=lerp(neck.rotation.y,headRest.yaw+pointerTarget.x*.24,follow);neck.rotation.x=lerp(neck.rotation.x,headRest.pitch+pointerTarget.y*.13,follow);
   }
  }
- if(state==='ready'){
+ if(state==='ready'&&!idleExhausted()){
   if(elapsed>blinkAt&&!blinkEnd){setFace(2);blinkEnd=elapsed+.13;}
   if(blinkEnd&&elapsed>blinkEnd){setFace(1);blinkEnd=0;blinkAt=elapsed+2.5+Math.random()*3;}
  }
