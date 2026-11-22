@@ -87,7 +87,7 @@ body.authored-game{background:#202020}
 .drawn-ui{--ui-inset:clamp(12px,2.5vw,20px)}
 #scene-vignette{display:none;position:fixed;inset:0;z-index:1;pointer-events:none}
 @media(min-width:900px){#scene-vignette{display:block;background:linear-gradient(90deg,rgba(5,7,14,.20),rgba(5,7,14,.06) 12%,transparent 26%,transparent 74%,rgba(5,7,14,.06) 88%,rgba(5,7,14,.20)),radial-gradient(ellipse 65% 85% at 50% 48%,transparent 45%,rgba(5,7,14,.10) 72%,rgba(5,7,14,.42) 100%)}}
-.drawn-ui header{top:auto;bottom:clamp(64px,12vh,160px);right:clamp(44px,12vw,360px)}
+.drawn-ui header{top:auto;bottom:clamp(64px,12vh,160px);right:calc(clamp(44px,12vw,360px) + 8px)}
 .drawn-ui header nav{gap:24px;align-items:center}
 .drawn-ui header button{display:block;width:72px;height:80px;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none;color:white}
 .drawn-ui header button:hover{transform:scale(1.08)}
@@ -96,7 +96,7 @@ body.authored-game{background:#202020}
 .drawn-ui #save-photo{order:0;width:82px;height:40px;font:400 18px GachaPixel,monospace;color:white;text-shadow:2px 2px #000,-1px -1px #000}
 .drawn-ui .lang-ko{font:400 48px GachaPixel,monospace;-webkit-text-stroke:3px black;paint-order:stroke fill}
 @font-face{font-family:GachaHand;src:url('./asset/gacha-hand.woff2') format('woff2');font-weight:400;font-display:swap}
-.drawn-ui .counter{--counter-type:42px;--counter-stroke:2.6px;left:clamp(42px,9vw,280px);top:clamp(34px,6vh,90px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:0;border:0;border-radius:0;background:none;text-align:left}
+.drawn-ui .counter{--counter-type:42px;--counter-stroke:4.8px;left:clamp(42px,9vw,280px);top:clamp(34px,6vh,90px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:0;border:0;border-radius:0;background:none;text-align:left}
 .drawn-ui .drawn-count{display:flex;align-items:center;gap:10px;height:70px}
 .drawn-ui .count-label{width:140px;height:72px;overflow:visible;animation-delay:-.13s}
 .drawn-ui .drawn-number{display:flex;align-items:baseline;gap:4px;animation-delay:-.38s;animation-duration:1.06s;white-space:nowrap}
@@ -112,15 +112,15 @@ body.authored-game{background:#202020}
 .ink-art{animation:gacha-line-boil .88s steps(1,end) infinite;transform-origin:center}
 #ssr-settings .ink-art{animation-delay:-.17s;animation-duration:.96s}#settings .ink-art{animation-delay:-.39s;animation-duration:.82s}#language .ink-art{animation-delay:-.92s;animation-duration:1.04s}
 @keyframes gacha-line-boil{0%,100%{filter:url('#gacha-ink-0');transform:translate(-.35px,0) rotate(-.3deg)}25%{filter:url('#gacha-ink-1');transform:translate(.35px,.4px) rotate(.25deg)}50%{filter:url('#gacha-ink-2');transform:translate(.15px,-.3px) rotate(-.15deg)}75%{filter:url('#gacha-ink-3');transform:translate(-.3px,.2px) rotate(.3deg)}}
-@media(max-width:520px){.drawn-ui .counter{--counter-type:34px;--counter-stroke:2.2px;gap:4px}.drawn-ui .count-label{width:110px;height:57px}.drawn-ui .drawn-count{gap:6px;height:58px}.drawn-ui .count-label-en{font-size:30px}.drawn-ui .speech{font-size:16px}.drawn-ui header button{width:56px;height:64px}.drawn-ui #language{height:50px}.drawn-ui .lang-ko{font-size:40px}.drawn-ui header nav{gap:21px}}
-@media(max-aspect-ratio:4/5){.drawn-ui .counter{left:max(24px,5vw,env(safe-area-inset-left));top:max(22px,3vh,env(safe-area-inset-top));gap:2px}.drawn-ui header{right:max(22px,4.5vw,env(safe-area-inset-right));bottom:max(32px,5.5vh,env(safe-area-inset-bottom))}.drawn-ui header nav{gap:clamp(12px,2vh,20px)}.drawn-ui header button{width:clamp(48px,10vw,64px);height:clamp(55px,11.5vw,74px)}.drawn-ui #language{height:clamp(40px,8vw,52px)}}
+@media(max-width:520px){.drawn-ui .counter{--counter-type:34px;--counter-stroke:4px;gap:4px}.drawn-ui .count-label{width:110px;height:57px}.drawn-ui .drawn-count{gap:6px;height:58px}.drawn-ui .count-label-en{font-size:30px}.drawn-ui .speech{font-size:16px}.drawn-ui header button{width:56px;height:64px}.drawn-ui #language{height:50px}.drawn-ui .lang-ko{font-size:40px}.drawn-ui header nav{gap:21px}}
+@media(max-aspect-ratio:4/5){.drawn-ui .counter{left:max(24px,5vw,env(safe-area-inset-left));top:max(22px,3vh,env(safe-area-inset-top));gap:2px}.drawn-ui header{right:calc(max(22px,4.5vw,env(safe-area-inset-right)) + 8px);bottom:max(32px,5.5vh,env(safe-area-inset-bottom))}.drawn-ui header nav{gap:clamp(12px,2vh,20px)}.drawn-ui header button{width:clamp(48px,10vw,64px);height:clamp(55px,11.5vw,74px)}.drawn-ui #language{height:clamp(40px,8vw,52px)}}
 @media(prefers-reduced-motion:reduce){.drawn-ui .ink-art{animation:none;filter:none;transform:none}}
 .drawn-ui svg.ink-art{overflow:hidden;pointer-events:none}
 .drawn-ui svg.ink-art image{pointer-events:none}
 body.previewing #world{cursor:grab}body.previewing #world:active{cursor:grabbing}
 #reward-flash{position:fixed;inset:-15%;z-index:6;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,#fff 0%,#fffffff2 18%,#ffffffa0 35%,#ffffff00 72%);will-change:opacity,transform}
 body.speech-dismissed .speech{visibility:hidden;opacity:0!important;pointer-events:none}
-#play-actions{position:fixed;left:50%;bottom:max(8vh,36px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:28px;z-index:12}
+#play-actions{position:fixed;inset:0;transform:none;display:block;pointer-events:none;z-index:12}
 #play-actions button,#play-actions #save-photo{border:0;border-radius:0;background:none;padding:12px 8px;color:white;font:400 24px GachaPixel,monospace;text-shadow:2px 2px #000,-1px -1px #000;white-space:nowrap;width:auto;height:auto}
 #play-actions button:hover{color:#fff3ac}
 #scene-error{position:fixed;z-index:40;top:45%;left:10%;right:10%;text-align:center;font:16px/1.6 GachaPixel,monospace;color:white}
@@ -142,11 +142,12 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 @keyframes coin-hint{0%,100%{opacity:1}50%{opacity:.55}}
 
 /* Plain type belongs to the result; the controls stay underneath it. */
-#play-actions{flex-direction:column;gap:12px}
-#reward-info{width:min(370px,56vw);text-align:center;color:#fff;pointer-events:none;text-shadow:2px 2px #000,-1px -1px #000;font-family:GachaPixel,monospace}
+#play-actions button{pointer-events:auto}
+#reward-info{position:absolute;left:50%;bottom:calc(50% + 46px);transform:translateX(-50%);width:min(370px,56vw);text-align:center;color:#fff;pointer-events:none;text-shadow:2px 2px #000,-1px -1px #000;font-family:GachaPixel,monospace}
 #reward-grade{display:block;font-size:13px;line-height:1.5;letter-spacing:2px;margin:0 0 5px;color:#e4e4e4}
 #reward-name{display:block;font:400 clamp(15px,3.8vw,21px)/1.35 GachaPixel,monospace;word-break:keep-all;overflow-wrap:anywhere}
-.result-buttons{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.result-buttons{position:absolute;inset:0;display:block;pointer-events:none}
+#play-actions #save-photo{position:absolute;left:50%;top:calc(50% + 50px);transform:translateX(-50%)}
 
 /* Monochrome controls, original prize colors, and locked silhouettes. */
 .drawn-ui #drawer{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;padding:48px 18px 64px;margin:0;background:#080808f5;color:#fff;box-shadow:none;border:0;border-radius:0;font-family:GachaPixel,monospace;scrollbar-color:#aaa #080808}
@@ -163,7 +164,7 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 @media(max-width:520px){#play-actions{gap:9px}.result-buttons{flex-direction:column;gap:0}#reward-grade{font-size:12px}.drawn-ui #prize-list{gap:26px 16px}#coin-label{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.coin-ring{animation:none}}
 
-#play-actions #play-again{font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
+#play-actions #play-again{position:absolute;left:50%;top:50%;margin:0;transform:translate(-50%,-50%);font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
 @keyframes again-blink{0%,60%,100%{opacity:1}61%,95%{opacity:.25}}
 #play-actions #play-again:focus-visible{outline:2px dotted white;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
