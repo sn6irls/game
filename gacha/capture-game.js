@@ -23,7 +23,7 @@ export async function captureGameFrame(canvas,overlays){
  const embedded=new Map();
  async function dataURL(url){const resolved=new URL(url,document.baseURI).href;if(!embedded.has(resolved)){const blob=await (await fetch(resolved)).blob();embedded.set(resolved,await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);}));}return embedded.get(resolved);}
  for(const image of wrapper.querySelectorAll('img,image')){const attr=image.localName==='image'?'href':'src',url=image.getAttribute(attr);if(url&&!url.startsWith('data:'))image.setAttribute(attr,await dataURL(url));}
- const font=document.createElement('style');font.textContent=`@font-face{font-family:GachaPixel;src:url('${await dataURL('./asset/neodgm.woff2')}') format('woff2');font-weight:400}`;wrapper.prepend(font);
+ const font=document.createElement('style');font.textContent=`@font-face{font-family:GachaPixel;src:url('${await dataURL('./asset/neodgm.woff2')}') format('woff2');font-weight:400}@font-face{font-family:GachaHand;src:url('${await dataURL('./asset/gacha-hand.woff2')}') format('woff2');font-weight:400}`;wrapper.prepend(font);
  const markup=new XMLSerializer().serializeToString(wrapper);
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="0 0 ${bounds.width} ${bounds.height}"><foreignObject width="100%" height="100%">${markup}</foreignObject></svg>`;
  const layer=new Image();layer.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);await layer.decode();
