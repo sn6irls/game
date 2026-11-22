@@ -19,7 +19,7 @@ export const PRIZES=[
  {id:'gum',rarity:'R',ko:'장난감 껌',en:'Prank chewing gum'},
  {id:'book',rarity:'R',ko:'문방구 공포책',en:'Corner-shop horror book'},
  {id:'glue',rarity:'R',ko:'반짝이풀',en:'Glitter glue'},
- {id:'meju',rarity:'R',ko:'메주',en:'Meju'},
+ {id:'meju',rarity:'R',ko:'잘 묶인 메주',en:'Neatly tied meju'},
  {id:'mini',rarity:'SR',ko:'슈퍼짱미니피규어',en:'Mini Super-chan figure'},
  {id:'angel',rarity:'SSR',ko:'천사고양이주방장소녀슈퍼짱',en:'Angel Cat Chef Girl Super-chan'}
 ];
@@ -30,17 +30,25 @@ export function createPrizeLibrary(receipt,ssr,trashAtlas,normalAtlas,mejuImage)
  let renderer;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.01,20);camera.position.set(0,.6,4.3);camera.lookAt(0,0,0);
  const light=new THREE.DirectionalLight(0xffffff,2);light.position.set(-3,5,5);scene.add(light,new THREE.HemisphereLight(0xffffff,0x81766a,1.8));
- function photograph(model){
+ function photograph(model,{trim=false}={}){
   if(!renderer){renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setSize(384,384);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor(0,0);}
   const clone=model.clone(true);clone.visible=true;clone.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(clone),size=box.getSize(new THREE.Vector3());clone.position.sub(box.getCenter(new THREE.Vector3()));
   const group=new THREE.Group();group.add(clone);group.scale.setScalar(2/Math.max(size.x,size.y,size.z));scene.add(group);renderer.render(scene,camera);
-  const still=document.createElement('canvas');still.width=still.height=384;still.getContext('2d').drawImage(renderer.domElement,0,0);scene.remove(group);return still;
+  const still=document.createElement('canvas');still.width=still.height=384;const ctx=still.getContext('2d');ctx.drawImage(renderer.domElement,0,0);scene.remove(group);
+  if(!trim)return still;
+  // Fill the SSR thumbnail with the actual silhouette, not transparent margins.
+  const pixels=ctx.getImageData(0,0,384,384).data;let x0=384,y0=384,x1=-1,y1=-1;
+  for(let y=0;y<384;y++)for(let x=0;x<384;x++)if(pixels[(y*384+x)*4+3]>8){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+  if(x1<0)return still;
+  const cropped=document.createElement('canvas');cropped.width=cropped.height=384;
+  const width=x1-x0+1,height=y1-y0+1,scale=384*.88/Math.max(width,height);
+  cropped.getContext('2d').drawImage(still,x0,y0,width,height,(384-width*scale)/2,(384-height*scale)/2,width*scale,height*scale);return cropped;
  }
  const models=new Map(),thumbs=new Map(),stills=new Map();
  const meju=document.createElement('canvas');meju.width=mejuImage.width;meju.height=mejuImage.height;meju.getContext('2d').drawImage(mejuImage,0,0);stills.set('meju',meju);
  function getStill(id){
-  if(!stills.has(id))stills.set(id,TRASH_CROPS[id]?cropTrash(trashAtlas,id):NORMAL_CROPS[id]?cropNormal(normalAtlas,id):photograph(id==='receipt'?receipt:ssr));
+  if(!stills.has(id))stills.set(id,TRASH_CROPS[id]?cropTrash(trashAtlas,id):NORMAL_CROPS[id]?cropNormal(normalAtlas,id):photograph(id==='receipt'?receipt:ssr,{trim:id==='angel'}));
   return stills.get(id);
  }
  function getThumb(id){if(!thumbs.has(id))thumbs.set(id,getStill(id).toDataURL('image/png'));return thumbs.get(id);}

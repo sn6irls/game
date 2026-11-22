@@ -8,7 +8,7 @@ import {CapsuleDrop,SmoothRotation,rewardPop,hatchOpening,HATCH_DURATION,HATCH_C
 import {CapsulePhysics} from './capsule-physics.js';
 import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
-import {PRIZES,createPrizeLibrary} from './prize-library.js?v=angel-cat-super-chan';
+import {PRIZES,createPrizeLibrary} from './prize-library.js?v=large-ssr-thumb';
 import {createGameAudio} from './game-audio.js?v=coin-click';
 import {reactionFor,dialogueText} from './reward-reactions.js?v=exhausted-reactions';
 import {applyFaceFrame,FACE_IDS} from './face-atlas.js';
@@ -108,7 +108,7 @@ function setFace(n){expression=exhausted?FACE_IDS.exhausted:n;applyFaceFrame(fac
 
 const ssrBox=new THREE.Box3().setFromObject(ssr),ssrSize=ssrBox.getSize(new THREE.Vector3()),ssrCenter=ssrBox.getCenter(new THREE.Vector3());
 const rewardPivot=new THREE.Group();rewardPivot.position.copy(ssrCenter);scene.add(rewardPivot);rewardPivot.attach(ssr);ssr.visible=false;
-rewardPivot.scale.setScalar(1.65);
+rewardPivot.scale.setScalar(1.05);
 rewardPivot.position.addScaledVector(new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion),.09);
 let customSSR=null,customThumb=null;
 const commonPivot=new THREE.Group();new THREE.Box3().setFromObject(trash).getCenter(commonPivot.position);scene.add(commonPivot);commonPivot.attach(trash);trash.visible=false;
@@ -433,12 +433,12 @@ function updateGuide(){
 function updateSpeech(){
  const p=projected(neck.position.clone().add(new THREE.Vector3(0,.37,0))),bubble=$('#speech');
  const portrait=view.width/view.height<=.8;
- const artwork=BUBBLES[bubbleKind()],width=portrait?Math.min(340,view.width*.70,view.height*.33):Math.min(390,view.width*artwork.width,view.height*.39),height=width*artwork.aspect;
- const thoughtWidth=Math.min(390,view.width*BUBBLES.thought.width,view.height*.39);
+ const artwork=BUBBLES[bubbleKind()],width=(portrait?Math.min(340,view.width*.70,view.height*.33):Math.min(390,view.width*artwork.width,view.height*.39))*.95,height=width*artwork.aspect;
+ const thoughtWidth=Math.min(390,view.width*BUBBLES.thought.width,view.height*.39)*.95;
  let left=clamp(p.x+Math.min(view.width,600)*(bubbleKind()==='emphasis'?.112:.10)-thoughtWidth/2,12,view.width-width-12);
  const counterBox=$('.counter').getBoundingClientRect(),minimumTop=x=>x<counterBox.right&&x+width>counterBox.left?Math.max(40,counterBox.bottom+8):40;
  let top=clamp(p.y-width*(resultState()?.265:.29)-height*artwork.bodyY,minimumTop(left),view.height-height-100);
- if(portrait){left=Math.max(16,view.width*.055);top=clamp(counterBox.bottom+10,16,view.height-height-100);}
+ if(portrait){left=Math.max(24,view.width*.065);top=clamp(counterBox.bottom+10,16,view.height-height-100);}
  // Reserve the resting coin and its label even after paying, so the bubble
  // stays steady and never covers the target on wide or short viewports.
  const coinPoint=projected(coinRig.rest);coinPoint.x=clamp(coinPoint.x,54,view.width-54);coinPoint.y=clamp(coinPoint.y,70,view.height-70);
@@ -451,10 +451,11 @@ function updateSpeech(){
  fitSpeechText(bubble,width,height);
 }
 $('#language').onclick=()=>{lang=lang==='ko'?'en':'ko';syncUI();};
+$('#prize-list').addEventListener('dragstart',event=>event.preventDefault());
 $('#settings').onclick=()=>{
  const list=$('#prize-list');list.replaceChildren();
  for(const prize of PRIZES){
-  const found=owned.has(prize.id),card=document.createElement('div');card.className='prize-card '+(found?'unlocked':'locked');card.setAttribute('role','listitem');const img=new Image();img.src=prize.id==='angel'&&customThumb?customThumb:library.getThumb(prize.id);img.alt='';const label=document.createElement('div');label.className='prize-name';label.textContent=found?prize[lang]:'???';const rarity=document.createElement('b');rarity.textContent=gradeName(prize.rarity);card.append(img,label,rarity);list.append(card);
+  const found=owned.has(prize.id),card=document.createElement('div');card.className='prize-card '+(found?'unlocked':'locked');card.dataset.rarity=prize.rarity;card.setAttribute('role','listitem');const img=new Image();img.draggable=false;img.src=prize.id==='angel'&&customThumb?customThumb:library.getThumb(prize.id);img.alt='';const label=document.createElement('div');label.className='prize-name';label.textContent=found?prize[lang]:'???';const rarity=document.createElement('b');rarity.textContent=gradeName(prize.rarity);card.append(img,label,rarity);list.append(card);
  }$('#drawer').showModal();
 };
 $('#drawer').addEventListener('click',e=>{if(e.target===$('#drawer'))$('#drawer').close();});
@@ -483,7 +484,7 @@ async function importPrize(file){
   object.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3());
   if(box.isEmpty()||!Number.isFinite(size.length())||size.length()===0)throw Error('empty model');
   const group=new THREE.Group();object.position.sub(box.getCenter(new THREE.Vector3()));group.add(object);group.scale.setScalar(Math.max(ssrSize.x,ssrSize.y,ssrSize.z)/Math.max(size.x,size.y,size.z));
-  group.traverse(o=>{if(o.isMesh)o.castShadow=true;});removeCustom();customSSR=group;rewardPivot.add(group);group.visible=state==='won';ssr.visible=false;rewardPivot.rotation.set(0,0,0);customThumb=library.photograph(group).toDataURL('image/png');rebuildPreview();
+  group.traverse(o=>{if(o.isMesh)o.castShadow=true;});removeCustom();customSSR=group;rewardPivot.add(group);group.visible=state==='won';ssr.visible=false;rewardPivot.rotation.set(0,0,0);customThumb=library.photograph(group,{trim:true}).toDataURL('image/png');rebuildPreview();
   input.value='';swap.close();
  }catch(error){if(object)disposeObject(object);$('#ssr-notice').textContent=lang==='ko'?'이미지 또는 GLB 파일을 선택해 주세요.':'Choose an image or GLB file.';}
  finally{if(url)URL.revokeObjectURL(url);importing=false;$('#ssr-choose').disabled=false;$('#ssr-reset').disabled=false;}

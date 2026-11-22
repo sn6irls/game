@@ -96,14 +96,14 @@ body.authored-game{background:#202020}
 .drawn-ui #save-photo{order:0;width:82px;height:40px;font:400 18px GachaPixel,monospace;color:white;text-shadow:2px 2px #000,-1px -1px #000}
 .drawn-ui .lang-ko{font:400 48px GachaPixel,monospace;-webkit-text-stroke:3px black;paint-order:stroke fill}
 @font-face{font-family:GachaHand;src:url('./asset/gacha-hand.woff2') format('woff2');font-weight:400;font-display:swap}
-.drawn-ui .counter{--counter-type:54px;left:clamp(42px,9vw,280px);top:clamp(34px,6vh,90px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:0;border:0;border-radius:0;background:none;text-align:left}
+.drawn-ui .counter{--counter-type:42px;--counter-stroke:2.6px;left:clamp(42px,9vw,280px);top:clamp(34px,6vh,90px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:0;border:0;border-radius:0;background:none;text-align:left}
 .drawn-ui .drawn-count{display:flex;align-items:center;gap:10px;height:70px}
 .drawn-ui .count-label{width:140px;height:72px;overflow:visible;animation-delay:-.13s}
 .drawn-ui .drawn-number{display:flex;align-items:baseline;gap:4px;animation-delay:-.38s;animation-duration:1.06s;white-space:nowrap}
-.drawn-ui .drawn-number b{font:400 var(--counter-type)/1.05 GachaHand,cursive;font-variant-numeric:tabular-nums;letter-spacing:0;color:white;-webkit-text-stroke:1.8px black;paint-order:stroke fill}
-.drawn-ui .drawn-number small{font:400 var(--counter-type)/1.05 GachaHand,cursive;color:white;margin:0;-webkit-text-stroke:1.8px black;paint-order:stroke fill}
+.drawn-ui .drawn-number b{font:400 var(--counter-type)/1.05 GachaHand,cursive;font-variant-numeric:tabular-nums;letter-spacing:0;color:white;-webkit-text-stroke:var(--counter-stroke) #000;paint-order:stroke fill;text-shadow:1px 1px 0 #000}
+.drawn-ui .drawn-number small{font:400 var(--counter-type)/1.05 GachaHand,cursive;color:white;margin:0;-webkit-text-stroke:var(--counter-stroke) #000;paint-order:stroke fill;text-shadow:1px 1px 0 #000}
 .drawn-ui .counter .spending{margin:0;line-height:1.2;animation-delay:-.62s;animation-duration:.94s}
-.drawn-ui .counter .spending strong{display:block;font:400 var(--counter-type)/1.05 GachaHand,cursive;font-variant-numeric:tabular-nums;color:white;letter-spacing:0;margin:0;-webkit-text-stroke:1.8px black;paint-order:stroke fill}
+.drawn-ui .counter .spending strong{display:block;font:400 var(--counter-type)/1.05 GachaHand,cursive;font-variant-numeric:tabular-nums;color:white;letter-spacing:0;margin:0;-webkit-text-stroke:var(--counter-stroke) #000;paint-order:stroke fill;text-shadow:1px 1px 0 #000}
 .drawn-ui .count-label-en{font:400 36px GachaPixel,monospace;color:white;-webkit-text-stroke:3px black;paint-order:stroke fill}
 .drawn-ui .speech{max-width:none;background:none;border:0;border-radius:0;box-shadow:none;padding:0;isolation:isolate;transform:none;font:400 20px/1.45 GachaPixel,monospace;color:#191b1d}
 .drawn-ui .speech-art{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:-1;pointer-events:none;animation-delay:-.47s;animation-duration:1.08s}
@@ -112,8 +112,8 @@ body.authored-game{background:#202020}
 .ink-art{animation:gacha-line-boil .88s steps(1,end) infinite;transform-origin:center}
 #ssr-settings .ink-art{animation-delay:-.17s;animation-duration:.96s}#settings .ink-art{animation-delay:-.39s;animation-duration:.82s}#language .ink-art{animation-delay:-.92s;animation-duration:1.04s}
 @keyframes gacha-line-boil{0%,100%{filter:url('#gacha-ink-0');transform:translate(-.35px,0) rotate(-.3deg)}25%{filter:url('#gacha-ink-1');transform:translate(.35px,.4px) rotate(.25deg)}50%{filter:url('#gacha-ink-2');transform:translate(.15px,-.3px) rotate(-.15deg)}75%{filter:url('#gacha-ink-3');transform:translate(-.3px,.2px) rotate(.3deg)}}
-@media(max-width:520px){.drawn-ui .counter{--counter-type:44px;gap:4px}.drawn-ui .count-label{width:110px;height:57px}.drawn-ui .drawn-count{gap:6px;height:58px}.drawn-ui .count-label-en{font-size:30px}.drawn-ui .speech{font-size:16px}.drawn-ui header button{width:56px;height:64px}.drawn-ui #language{height:50px}.drawn-ui .lang-ko{font-size:40px}.drawn-ui header nav{gap:21px}}
-@media(max-aspect-ratio:4/5){.drawn-ui .counter{left:max(16px,3vw,env(safe-area-inset-left));top:max(16px,2vh,env(safe-area-inset-top));gap:2px}.drawn-ui header{right:max(12px,2.4vw,env(safe-area-inset-right));bottom:max(22px,4vh,env(safe-area-inset-bottom))}.drawn-ui header nav{gap:clamp(12px,2vh,20px)}.drawn-ui header button{width:clamp(48px,10vw,64px);height:clamp(55px,11.5vw,74px)}.drawn-ui #language{height:clamp(40px,8vw,52px)}}
+@media(max-width:520px){.drawn-ui .counter{--counter-type:34px;--counter-stroke:2.2px;gap:4px}.drawn-ui .count-label{width:110px;height:57px}.drawn-ui .drawn-count{gap:6px;height:58px}.drawn-ui .count-label-en{font-size:30px}.drawn-ui .speech{font-size:16px}.drawn-ui header button{width:56px;height:64px}.drawn-ui #language{height:50px}.drawn-ui .lang-ko{font-size:40px}.drawn-ui header nav{gap:21px}}
+@media(max-aspect-ratio:4/5){.drawn-ui .counter{left:max(24px,5vw,env(safe-area-inset-left));top:max(22px,3vh,env(safe-area-inset-top));gap:2px}.drawn-ui header{right:max(22px,4.5vw,env(safe-area-inset-right));bottom:max(32px,5.5vh,env(safe-area-inset-bottom))}.drawn-ui header nav{gap:clamp(12px,2vh,20px)}.drawn-ui header button{width:clamp(48px,10vw,64px);height:clamp(55px,11.5vw,74px)}.drawn-ui #language{height:clamp(40px,8vw,52px)}}
 @media(prefers-reduced-motion:reduce){.drawn-ui .ink-art{animation:none;filter:none;transform:none}}
 .drawn-ui svg.ink-art{overflow:hidden;pointer-events:none}
 .drawn-ui svg.ink-art image{pointer-events:none}
@@ -203,3 +203,10 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
  .drawn-ui #drawer .prize-name{font-size:18px;min-height:51px}
  .drawn-ui #drawer .prize-card b{font-size:15px}
 }
+
+/* Read-only artwork: no native drag preview may reveal a locked prize. */
+.drawn-ui #prize-list{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.drawn-ui #prize-list img{pointer-events:none;-webkit-user-drag:none;user-select:none}
+.drawn-ui #drawer .prize-card[data-rarity=SSR]{flex-basis:clamp(140px,26vw,180px)}
+.drawn-ui #drawer .prize-card[data-rarity=SSR] img{width:132px;height:132px}
+@media(min-width:900px) and (pointer:fine){.drawn-ui #drawer .prize-card[data-rarity=SSR] img{width:164px;height:164px}}
