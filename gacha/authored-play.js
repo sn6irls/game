@@ -437,7 +437,7 @@ function updateResultActions(){
   actionSizeKey=key;actionHalfWidth=Math.max(again.offsetWidth,$('#save-photo').offsetWidth)/2;actionHalfHeight=again.offsetHeight/2;
  }
  const point=projected(hatchCenter);
- actions.style.setProperty('--result-x',clamp(point.x,actionHalfWidth+12,view.width-actionHalfWidth-12)+'px');
+ actions.style.setProperty('--result-x',clamp(point.x-18,actionHalfWidth+12,view.width-actionHalfWidth-20)+'px');
  actions.style.setProperty('--result-y',clamp(point.y,actionHalfHeight+12,view.height-actionHalfHeight-(state==='won'?70:12))+'px');
 }
 function updateSpeech(){

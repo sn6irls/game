@@ -161,9 +161,9 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 @media(max-width:520px){#play-actions{gap:9px}.result-buttons{flex-direction:column;gap:0}.drawn-ui #prize-list{gap:26px 16px}#coin-label{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.coin-ring{animation:none}}
 
-#play-actions #play-again{position:absolute;left:var(--result-x,78%);top:var(--result-y,55%);margin:0;transform:translate(-50%,-50%);font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
-@media(max-width:380px){#play-actions #play-again{font-size:clamp(18px,6vw,22px);padding:8px 6px}#play-actions #save-photo{font-size:18px;padding:8px 6px}}
-@media(min-width:381px) and (max-width:520px){#play-actions #play-again:lang(en){font-size:26px}}
+#play-actions #play-again{position:absolute;left:var(--result-x,78%);top:var(--result-y,55%);margin:0;transform:translate(-50%,-50%);font-size:clamp(24px,2.56vw,34px);line-height:1.25;min-height:44px;animation:again-blink 1.4s steps(1,end) infinite}
+@media(max-width:380px){#play-actions #play-again{font-size:clamp(15px,5vw,18px);padding:8px 6px}#play-actions #save-photo{font-size:18px;padding:8px 6px}}
+@media(min-width:381px) and (max-width:520px){#play-actions #play-again:lang(en){font-size:21px}}
 @keyframes again-blink{0%,60%,100%{opacity:1}61%,95%{opacity:.25}}
 #play-actions #play-again:focus-visible{outline:2px dotted white;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
