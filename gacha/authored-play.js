@@ -8,7 +8,7 @@ import {CapsuleDrop,SmoothRotation,rewardPop,hatchOpening,HATCH_DURATION,HATCH_C
 import {CapsulePhysics} from './capsule-physics.js';
 import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
-import {PRIZES,createPrizeLibrary} from './prize-library.js?v=prize-presentation';
+import {PRIZES,createPrizeLibrary} from './prize-library.js?v=angel-cat-super-chan';
 import {createGameAudio} from './game-audio.js?v=coin-click';
 import {reactionFor,dialogueText} from './reward-reactions.js';
 import {applyFaceFrame} from './face-atlas.js';

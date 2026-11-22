@@ -21,7 +21,7 @@ export const PRIZES=[
  {id:'glue',rarity:'R',ko:'반짝이풀',en:'Glitter glue'},
  {id:'meju',rarity:'R',ko:'메주',en:'Meju'},
  {id:'mini',rarity:'SR',ko:'슈퍼짱미니피규어',en:'Mini Super-chan figure'},
- {id:'angel',rarity:'SSR',ko:'천사의 주방장 · 소라',en:'Angel Chef · Sora'}
+ {id:'angel',rarity:'SSR',ko:'천사고양이주방장소녀슈퍼짱',en:'Angel Cat Chef Girl Super-chan'}
 ];
 
 // Build only the prize that is drawn. Collection thumbnails and their offscreen
