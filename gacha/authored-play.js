@@ -222,6 +222,8 @@ let introDismissed=false,exhaustedLineDismissed=false;
 const actions=document.createElement('div');actions.id='play-actions';actions.hidden=true;
 const resultButtons=document.createElement('div');resultButtons.className='result-buttons';
 const again=document.createElement('button');again.id='play-again';resultButtons.append(again,$('#save-photo'));actions.append(resultButtons);document.body.append(actions);
+let actionSizeKey='',actionHalfWidth=0,actionHalfHeight=0;
+document.fonts.ready.then(()=>{actionSizeKey='';});
 const resultState=()=>state==='result'||state==='won';
 const previewCaption=document.createElement('button');previewCaption.id='prize-caption';previewCaption.type='button';previewCaption.hidden=true;previewCaption.setAttribute('aria-live','polite');previewCaption.innerHTML='<small id="preview-grade"></small><strong id="preview-name"></strong>';document.body.append(previewCaption);
 previewCaption.onclick=()=>{if(state==='revealed')showResult();};
@@ -428,6 +430,16 @@ function updateGuide(){
  const c=crank?knobCenter():projected(coinRig.coin.position);
  guide.style.left=c.x+'px';guide.style.top=c.y+'px';guide.style.setProperty('--crank-angle','0rad');
 }
+function updateResultActions(){
+ if(!resultState())return;
+ const key=[view.width,view.height,lang,again.textContent,state].join(':');
+ if(key!==actionSizeKey){
+  actionSizeKey=key;actionHalfWidth=Math.max(again.offsetWidth,$('#save-photo').offsetWidth)/2;actionHalfHeight=again.offsetHeight/2;
+ }
+ const point=projected(hatchCenter);
+ actions.style.setProperty('--result-x',clamp(point.x,actionHalfWidth+12,view.width-actionHalfWidth-12)+'px');
+ actions.style.setProperty('--result-y',clamp(point.y,actionHalfHeight+12,view.height-actionHalfHeight-(state==='won'?70:12))+'px');
+}
 function updateSpeech(){
  const p=projected(neck.position.clone().add(new THREE.Vector3(0,.37,0))),bubble=$('#speech');
  const portrait=view.width/view.height<=.8;
@@ -529,7 +541,7 @@ function frame(now){
  if(state==='resetting'&&age>=.45)restartRun();
  flashStrength=state==='resetting'?Math.sin(clamp(age/.45,0,1)*Math.PI):state==='opening'?THREE.MathUtils.smoothstep(age,.13,.21)*(1-THREE.MathUtils.smoothstep(age,.21,.77)):0;
  flash.style.opacity=String(flashStrength*(reduced.matches?.35:1));flash.style.transform=`scale(${.8+clamp((age-.13)/.64,0,1)*.5})`;
- syncBalls(dt);updateContactShadows();updateGuide();updateSpeech();
+ syncBalls(dt);updateContactShadows();updateGuide();updateSpeech();updateResultActions();
  const focused=focusedState();
  compositor.render(scene,camera,overlay,revealCamera,focused,dt,!reduced.matches&&cameraPull<.9999,reduced.matches);
 }

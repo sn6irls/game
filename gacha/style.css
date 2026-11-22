@@ -141,10 +141,10 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 #coin-label{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);white-space:nowrap;pointer-events:auto}
 @keyframes coin-hint{0%,100%{opacity:1}50%{opacity:.55}}
 
-/* Keep the held-result replay centered; photo save sits just below it. */
+/* Follow the machine outlet, keeping replay clear of the character's face. */
 #play-actions button{pointer-events:auto}
 .result-buttons{position:absolute;inset:0;display:block;pointer-events:none}
-#play-actions #save-photo{position:absolute;left:50%;top:calc(50% + 50px);transform:translateX(-50%)}
+#play-actions #save-photo{position:absolute;left:var(--result-x,78%);top:calc(var(--result-y,55%) + 50px);transform:translateX(-50%)}
 
 /* Monochrome controls, original prize colors, and locked silhouettes. */
 .drawn-ui #drawer{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;padding:48px 18px 64px;margin:0;background:#080808f5;color:#fff;box-shadow:none;border:0;border-radius:0;font-family:GachaPixel,monospace;scrollbar-color:#aaa #080808}
@@ -161,7 +161,9 @@ body.scene-pending header,body.scene-pending #hud,body.scene-pending #play-actio
 @media(max-width:520px){#play-actions{gap:9px}.result-buttons{flex-direction:column;gap:0}.drawn-ui #prize-list{gap:26px 16px}#coin-label{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.coin-ring{animation:none}}
 
-#play-actions #play-again{position:absolute;left:50%;top:50%;margin:0;transform:translate(-50%,-50%);font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
+#play-actions #play-again{position:absolute;left:var(--result-x,78%);top:var(--result-y,55%);margin:0;transform:translate(-50%,-50%);font-size:clamp(30px,3.2vw,42px);line-height:1.25;animation:again-blink 1.4s steps(1,end) infinite}
+@media(max-width:380px){#play-actions #play-again{font-size:clamp(18px,6vw,22px);padding:8px 6px}#play-actions #save-photo{font-size:18px;padding:8px 6px}}
+@media(min-width:381px) and (max-width:520px){#play-actions #play-again:lang(en){font-size:26px}}
 @keyframes again-blink{0%,60%,100%{opacity:1}61%,95%{opacity:.25}}
 #play-actions #play-again:focus-visible{outline:2px dotted white;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){#play-actions #play-again{animation:none;opacity:1}}
