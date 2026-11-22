@@ -2,7 +2,7 @@
 const musicPlayer=(()=>{
  const PUBLISHED_PLAYER='https://sn6irls.github.io/game/computer/playlist-player.html';
  const copy=(ko,en)=>I18N.get()==='en'?en:ko;
- let appRef=null,el=null,frame=null,frameOrigin='',cur=null,ready=false,playing=false,error='',muted=false,track='',cancelDrag=null;
+ let appRef=null,el=null,frame=null,frameOrigin='',cur=null,ready=false,playing=false,error='',muted=false,track='',windowDrag=null;
  function listFor(key){const config=CONFIG.os.playlist||{},list=config[key]||{},id=list.id||config.id||'';return /^[A-Za-z0-9_-]{2,64}$/.test(id)?{key,id,title:list.title||config.title||'Playlist'}:null;}
  const hasList=key=>!!listFor(key||appRef?.themeKey||'supa');
  const isOpen=()=>!!el&&!el.classList.contains('hidden');
@@ -26,7 +26,6 @@ const musicPlayer=(()=>{
   if(data.event==='infoDelivery'&&data.info){const info=data.info;if(typeof info.playerState==='number')playing=info.playerState===1;if(info.videoData?.title)track=info.videoData.title;if(info.muted!==undefined)muted=!!info.muted;if(playing)error='';}
   render();
  });
- function clamp(){if(!el?.classList.contains('dragged'))return;const rect=el.getBoundingClientRect();el.style.left=Math.max(0,Math.min(rect.left,innerWidth-el.offsetWidth))+'px';el.style.top=Math.max(0,Math.min(rect.top,innerHeight-80))+'px';}
  function build(){
   if(el)return;el=document.createElement('section');el.id='wmp';el.className='wmp simple hidden place-os size-wide';el.setAttribute('role','region');el.setAttribute('aria-label','Playlist');
   el.innerHTML='<header class="wmp-top"><img class="wmp-app-icon" src="assets/player.svg" alt=""><span class="wmp-name">플레이리스트</span><span class="wmp-tbtn"><button class="wmp-x" aria-label="닫기" title="닫기">×</button></span></header><div class="wmp-body"><div class="wmp-screen"><iframe class="wmp-frame" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Playlist"></iframe></div><p class="wmp-track"></p><div class="wmp-pad"><button class="wmp-prev" aria-label="이전 곡" title="이전 곡">◀◀</button><button class="wmp-play" aria-label="재생" title="재생">▶</button><button class="wmp-next" aria-label="다음 곡" title="다음 곡">▶▶</button></div><p class="wmp-message" role="status" hidden></p><a class="wmp-external" target="_blank" rel="noopener noreferrer">YouTube Music에서 열기 ↗</a></div>';
@@ -34,12 +33,7 @@ const musicPlayer=(()=>{
   el.querySelector('.wmp-x').addEventListener('click',()=>{AudioSys.sfx('close');close();});
   for(const [selector,command]of [['.wmp-prev','previousVideo'],['.wmp-next','nextVideo']])el.querySelector(selector).addEventListener('click',()=>{AudioSys.sfx('click');post(command);});
   el.querySelector('.wmp-play').addEventListener('click',()=>{AudioSys.sfx('click');post(playing?'pauseVideo':'playVideo');});
-  el.querySelector('.wmp-top').addEventListener('pointerdown',event=>{
-   if(event.button!==0||event.target.closest('button'))return;cancelDrag?.();const rect=el.getBoundingClientRect(),dx=event.clientX-rect.left,dy=event.clientY-rect.top;
-   const move=e=>{el.classList.add('dragged');el.style.left=Math.max(0,Math.min(innerWidth-el.offsetWidth,e.clientX-dx))+'px';el.style.top=Math.max(0,Math.min(innerHeight-80,e.clientY-dy))+'px';};
-   cancelDrag=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',cancelDrag);removeEventListener('pointercancel',cancelDrag);removeEventListener('blur',cancelDrag);};
-   addEventListener('pointermove',move);addEventListener('pointerup',cancelDrag);addEventListener('pointercancel',cancelDrag);addEventListener('blur',cancelDrag);
-  });
+  windowDrag=DesktopDrag.window(el,el.querySelector('.wmp-top'));
  }
  function load(key){
   const list=listFor(key);if(!list)return false;cur=list;ready=false;playing=false;error='';track='';muted=AudioSys.isMuted();
@@ -48,9 +42,9 @@ const musicPlayer=(()=>{
   AudioSys.suppressBGM(true);frame.src=url.href;render();return true;
  }
  function open(app,opt){if(app)appRef=app;build();if(!load(opt?.key||appRef?.themeKey||'supa'))return false;el.classList.remove('hidden');return true;}
- function close(){if(!el)return;cancelDrag?.();frame.src='about:blank';el.classList.add('hidden');el.classList.remove('playing');cur=null;ready=false;playing=false;AudioSys.suppressBGM(!!window.__COMPUTER_GAME_ACTIVE);AudioSys.playBGM();}
- function enterOS(app){if(app)appRef=app;build();cancelDrag?.();el.classList.remove('dragged');el.style.left=el.style.top='';}
+ function close(){if(!el)return;windowDrag?.cancel();frame.src='about:blank';el.classList.add('hidden');el.classList.remove('playing');cur=null;ready=false;playing=false;AudioSys.suppressBGM(!!window.__COMPUTER_GAME_ACTIVE);AudioSys.playBGM();}
+ function enterOS(app){if(app)appRef=app;build();windowDrag?.cancel();windowDrag?.reset();el.style.left=el.style.top='';}
  function syncTheme(){if(isOpen()&&appRef&&cur?.key!==appRef.themeKey)load(appRef.themeKey);}
- addEventListener('sng-theme-change',syncTheme);addEventListener('computer-language-change',render);addEventListener('resize',clamp);
+ addEventListener('sng-theme-change',syncTheme);addEventListener('computer-language-change',render);
  return {open,close,isOpen,enterOS,syncTheme,hasList,toggle(app){if(isOpen()){close();return true;}return open(app);},setMuted(on){if(!isOpen())return;muted=!!on;post(muted?'mute':'unMute');},title:()=>cur?.title||''};
 })();

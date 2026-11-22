@@ -27,7 +27,7 @@ const browserUI = (() => {
       clearTimeout(win.loadTimer);win.frame.onload=win.frame.onerror=null;
       win.frame.src='about:blank';win.frame.remove();activeGame=null;
     }
-    win.cancelDrag?.();win.el.remove();win.tab.remove();windows.delete(id);
+    win.drag?.destroy();win.el.remove();win.tab.remove();windows.delete(id);
     if(id==='game'&&restore){setGaming(false);if(restoreFocus?.isConnected)restoreFocus.focus({preventScroll:true});}
   }
   function openWindow({id,title,html,width=440,game=false}){
@@ -42,17 +42,11 @@ const browserUI = (() => {
     tab.addEventListener('click',()=>focusWindow(id));el.addEventListener('pointerdown',()=>focusWindow(id));
     el.querySelector('.osw-x').addEventListener('click',()=>closeWindow(id));
     el.querySelector('.osw-max')?.addEventListener('click',event=>{
-      const full=el.classList.toggle('maximized'),button=event.currentTarget;
+      win.drag?.cancel();const full=el.classList.toggle('maximized'),button=event.currentTarget;if(!full)win.drag?.clamp();
       button.setAttribute('aria-pressed',String(full));button.setAttribute('aria-label',full?'작은 창으로':'전체 화면');button.title=full?'작은 창으로':'전체 화면';button.textContent=full?'❐':'□';
     });
     const win={el,tab};windows.set(id,win);winRoot.append(el);tabs.append(tab);
-    if(!game)el.querySelector('.osw-top').addEventListener('pointerdown',event=>{
-      if(event.button!==0||event.target.closest('button'))return;
-      win.cancelDrag?.();const rect=el.getBoundingClientRect(),dx=event.clientX-rect.left,dy=event.clientY-rect.top;
-      const move=e=>{el.style.left=Math.max(0,Math.min(innerWidth-el.offsetWidth,e.clientX-dx))+'px';el.style.top=Math.max(0,Math.min(innerHeight-100,e.clientY-dy))+'px';};
-      win.cancelDrag=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',win.cancelDrag);removeEventListener('pointercancel',win.cancelDrag);removeEventListener('blur',win.cancelDrag);};
-      addEventListener('pointermove',move);addEventListener('pointerup',win.cancelDrag);addEventListener('pointercancel',win.cancelDrag);addEventListener('blur',win.cancelDrag);
-    });
+    win.drag=DesktopDrag.window(el,el.querySelector('.osw-top'));
     focusWindow(id);return win;
   }
   const gameButtons=()=>games().map(g=>`<button data-launch="${esc(g.id)}"><span aria-hidden="true">${g.icon}</span><span>${esc(g.label)}</span></button>`).join('');
@@ -66,7 +60,7 @@ const browserUI = (() => {
     closeWindow('game',false);closeWindow('games');musicPlayer.close();
     if(diaryUI.isOpen())diaryUI.close();activeGame=id;setGaming(true);setMenu(false);
     const win=openWindow({id:'game',title:game.label,game:true,html:'<div class="game-stage"></div>'});
-    if(id==='desktop'&&!matchMedia('(pointer:coarse)').matches&&innerWidth>=900)win.el.querySelector('.osw-max').click();
+    if(id==='desktop'&&!matchMedia('(pointer:coarse)').matches&&innerWidth>=900)win.el.classList.add('desktop-window');
     const frame=document.createElement('iframe');
     frame.className='game-frame';frame.title=game.label;frame.dataset.game=id;
     frame.setAttribute('allow','camera; microphone; autoplay; fullscreen');frame.setAttribute('allowfullscreen','');frame.referrerPolicy='strict-origin-when-cross-origin';win.frame=frame;
@@ -95,7 +89,7 @@ const browserUI = (() => {
     for(const icon of icons){
       const button=document.createElement('button');button.className='os-icon'+(icon.game?' game-icon':'');button.dataset.id=icon.id;button.setAttribute('aria-label',icon.label);if(icon.game)button.dataset.game=icon.game;
       button.innerHTML=`<span class="osi-img">${icon.img?`<img src="${esc(icon.img)}" alt="" draggable="false">`:esc(icon.emoji||'')}</span><span class="osi-label">${esc(icon.label)}</span>`;
-      button.addEventListener('click',()=>{if(button.dataset.justDragged)return;AudioSys.sfx('click');if(icon.game)openGame(icon.game);else actions[icon.id]?.();});root.append(button);dragIcon(button);
+      button.addEventListener('click',()=>{AudioSys.sfx('click');if(icon.game)openGame(icon.game);else actions[icon.id]?.();});root.append(button);dragIcon(button);
     }
     layoutIcons();
   }
@@ -117,12 +111,10 @@ const browserUI = (() => {
       placeIcon(el,...(spots.get(el.dataset.id)||initial));
     }
   }
-  function dragIcon(el){el.addEventListener('pointerdown',e=>{
-    if(e.button!==0)return;const x=e.clientX,y=e.clientY,left=parseFloat(el.style.left),top=parseFloat(el.style.top);let moved=false;
-    const move=ev=>{if(!moved&&Math.abs(ev.clientX-x)+Math.abs(ev.clientY-y)<6)return;moved=true;el.classList.add('dragging');placeIcon(el,left+ev.clientX-x,top+ev.clientY-y);};
-    const up=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);removeEventListener('blur',up);el.classList.remove('dragging');if(moved){spots.set(el.dataset.id,[parseFloat(el.style.left),parseFloat(el.style.top)]);el.dataset.justDragged='1';setTimeout(()=>delete el.dataset.justDragged,0);}};
-    addEventListener('pointermove',move);addEventListener('pointerup',up);addEventListener('pointercancel',up);addEventListener('blur',up);
-  });}
+  function dragIcon(el){
+    let left,top;
+    DesktopDrag.attach(el,{start(){left=parseFloat(el.style.left);top=parseFloat(el.style.top);},move(dx,dy){placeIcon(el,left+dx,top+dy);},end(moved){if(moved)spots.set(el.dataset.id,[parseFloat(el.style.left),parseFloat(el.style.top)]);}});
+  }
   function setMenu(open){menu.classList.toggle('hidden',!open);start.classList.toggle('active',open);start.setAttribute('aria-expanded',String(open));}
   start.addEventListener('click',()=>setMenu(menu.classList.contains('hidden')));
   document.addEventListener('pointerdown',e=>{if(!e.target.closest('#start-menu,#task-start'))setMenu(false);});

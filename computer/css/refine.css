@@ -29,3 +29,16 @@
 /* Simple playlist: video, track name and three playback buttons. */
 .wmp.simple{width:min(420px,calc(100vw - 24px))}.wmp.simple .wmp-body{display:grid;gap:10px;margin:0;padding:10px;background:#ece9d8}.wmp.simple .wmp-screen{width:100%;min-height:200px;aspect-ratio:16/9;height:auto;border:0}.wmp.simple .wmp-track{margin:0;padding:4px 2px;font:16px/1.5 'Galmuri11',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#253444;opacity:1;letter-spacing:0}.wmp.simple .wmp-pad{gap:12px}.wmp.simple .wmp-pad button{width:48px;height:40px;font:16px/1 Arial;border-radius:3px}.wmp.simple .wmp-pad .wmp-play{width:60px;height:42px;font-size:20px}.wmp.simple .wmp-external{font:13px/1.5 'Galmuri11',sans-serif;padding:4px 0 0;color:#49617f;text-align:center}.wmp.simple .wmp-message{padding:8px;font-size:14px}.wmp.simple .wmp-message[hidden]{display:none}
 @media(min-width:1800px) and (pointer:fine){.wmp.simple{width:480px}.wmp.simple .wmp-track{font-size:18px}.wmp.simple .wmp-pad button{height:44px}.wmp.simple .wmp-pad .wmp-play{height:46px}.wmp.simple .wmp-external{font-size:14px}}
+
+/* Keep the real icon under the pointer without a filtered or animated drag layer. */
+#os-icons.os-free .os-icon.dragging{filter:none;opacity:1;box-shadow:none;transform:none;transition:none;z-index:15}
+body.desktop-dragging .os-icon .osi-img{animation:none!important;transform:none!important}
+.os-icon,.os-icon *,.osw-top,.osw-top *,.diary-top,.diary-top *,.wmp-top,.wmp-top *{-webkit-user-drag:none}
+.osw-top,.diary-top,.wmp-top{touch-action:none;user-select:none;-webkit-user-select:none}
+.game-window:not(.maximized) .osw-top,.diary-top{cursor:grab}
+body.desktop-dragging,body.desktop-dragging *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+body.desktop-dragging iframe{pointer-events:none!important}
+.os-window.window-dragged:not(.maximized),#diary-win.window-dragged,.wmp.window-dragged{position:fixed!important;left:var(--window-left)!important;top:var(--window-top)!important;right:auto!important;bottom:auto!important;transform:none!important;margin:0!important}
+/* Desktop layout with a visible desktop margin; maximize remains an explicit action. */
+.os-window.game-window.desktop-window:not(.maximized){width:min(1440px,88vw)!important;height:min(900px,80dvh);max-height:calc(100dvh - var(--taskbar-height) - 24px)}
+.game-window.desktop-window .game-stage{flex:1;aspect-ratio:auto;min-height:0}

@@ -1,6 +1,7 @@
 // Append-only local guestbook. Keep the existing storage key and all previous records.
 const diaryUI=(()=>{
  const overlay=document.getElementById('diary-overlay'),win=document.getElementById('diary-win');
+ const windowDrag=DesktopDrag.window(win,win.querySelector('.diary-top'));
  const form=document.getElementById('diary-form'),list=document.getElementById('diary-list');
  const name=document.getElementById('diary-name'),memo=document.getElementById('diary-msg');
  const newButton=document.getElementById('diary-new'),readButton=document.getElementById('diary-read'),exportButton=document.getElementById('diary-export');
@@ -85,8 +86,8 @@ const diaryUI=(()=>{
   finally{exportButton.disabled=false;}
  });
  const ui={
-  async open(app){appRef=app;app.closeCurrent=()=>ui.close();initialize();page=0;view='read';I18N.apply(win);render(true);overlay.classList.remove('hidden');AudioSys.sfx('open');await loadArchive();render();},
-  close(){overlay.classList.add('hidden');if(appRef)appRef.closeCurrent=()=>browserUI.close();AudioSys.sfx('close');},
+  async open(app){appRef=app;app.closeCurrent=()=>ui.close();initialize();page=0;view='read';I18N.apply(win);render(true);overlay.classList.remove('hidden');windowDrag.clamp();AudioSys.sfx('open');await loadArchive();render();},
+  close(){windowDrag.cancel();overlay.classList.add('hidden');if(appRef)appRef.closeCurrent=()=>browserUI.close();AudioSys.sfx('close');},
   isOpen:()=>!overlay.classList.contains('hidden'),
   refreshLanguage(){I18N.apply(win);render();},
  };
