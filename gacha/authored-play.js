@@ -10,7 +10,7 @@ import {angleDelta,DEFAULT_ODDS,rollWithPity,pickPrize} from './logic.js';
 import {PITY_LIMIT} from './game-config.js';
 import {PRIZES,createPrizeLibrary} from './prize-library.js?v=large-ssr-thumb';
 import {createGameAudio} from './game-audio.js?v=coin-click';
-import {reactionFor,dialogueText} from './reward-reactions.js?v=exhausted-reactions';
+import {reactionFor,dialogueText} from './reward-reactions.js?v=exhausted-results';
 import {applyFaceFrame,FACE_IDS} from './face-atlas.js';
 import {captureGameFrame} from './capture-game.js?v=hand-counter';
 import {installDrawnUI,syncDrawnUI,fitSpeechText,BUBBLES} from './handdrawn-ui.js?v=centered-dialogue';
@@ -235,7 +235,7 @@ const idleExhausted=()=>spent>100000;
 function resetIdleFace(){exhausted=idleExhausted();reactionEmotion=exhausted?'exhausted':'neutral';lineKind=exhausted?'hesitant':'idle';lineIndex=0;setFace(FACE_IDS[reactionEmotion]);blinkEnd=0;blinkAt=elapsed+2.5;}
 function syncUI(){
  const waiting=state==='ready'||state==='inserting';
- const silent=(waiting&&(exhausted?exhaustedLineDismissed:introDismissed))||(exhausted&&exhaustedLineDismissed&&resultState());
+ const silent=waiting&&(exhausted?exhaustedLineDismissed:introDismissed);
  document.documentElement.lang=lang;$('#speech-text').textContent=silent?'':dialogueText(lang,lineKind,lineIndex,count);
  document.body.classList.toggle('speech-dismissed',speechDismissed||silent);
  syncDrawnUI(lang,bubbleKind());
